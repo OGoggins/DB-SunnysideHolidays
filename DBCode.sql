@@ -1,6 +1,6 @@
 CREATE DATABASE SunnySideHolidays;
 
-\c SunnySideHolidays
+\c sunnysideholidays
 
 CREATE TABLE HOTEL (
     ht_id SERIAL PRIMARY KEY,
@@ -66,7 +66,7 @@ CREATE TABLE CUSTOMER (
     cust_email VARCHAR(150) NOT NULL
 );
 
-CREATE TABLE BOOKKING (
+CREATE TABLE BOOKING (
     bk_id SERIAL PRIMARY KEY,
     cust_id INT NOT NULL,
     pk_id INT NOT NULL,
@@ -98,6 +98,17 @@ CREATE TABLE BRANCH (
     br_city VARCHAR(50) NOT NULL
 );
 
+CREATE TABLE BRANCH_PACKAGE (
+    pk_id INT NOT NULL,
+    br_id INT NOT NULL,
+        FOREIGN KEY (pk_id)
+            REFERENCES PACKAGE(pk_id)
+            ON DELETE CASCADE,
+            FOREIGN KEY (br_id)
+            REFERENCES BRANCH(br_id)
+            ON DELETE CASCADE
+);
+
 
 
 
@@ -107,8 +118,9 @@ VALUES
     ('Crown',3,'UK','69 Church Lane ','LERWICK','ZE1 0AA','0783213984',52),
     ('Jamersons',5,'UK','28 Manchester Road','SUTTON','SM1 5CW','0763613484',32)
 ;
+-- END
 INSERT INTO ROOM (ht_id,rm_type,rm_occupied,rm_extraDetails)
 VALUES
-    FOR ()
-    (1,'small single','fauls',''),
+    
+    (1,'small single','fauls','')
 ;
