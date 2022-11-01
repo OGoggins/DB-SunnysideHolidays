@@ -25,7 +25,8 @@ CREATE TABLE ROOM (
             ON DELETE CASCADE
 );
 
--- talking note how does the room table function with regards to data.
+-- talking note how does the room table function with regards to data
+-- testing 
 
 
 CREATE TABLE FLIGHT (
