@@ -1,0 +1,225 @@
+CREATE TABLE "BRANCH_PACKAGE" (
+  "pk_id" INT,
+  "br_id" INT
+);
+
+CREATE INDEX "PK/FK" ON  "BRANCH_PACKAGE" ("pk_id", "br_id");
+
+CREATE TABLE "QUALITY_CONTROL" (
+  "emp_id" INT,
+  "qc_weeklyCheck" BOOL,
+  "qc_totalReports" INT
+);
+
+CREATE INDEX "PK/FK" ON  "QUALITY_CONTROL" ("emp_id");
+
+CREATE TABLE "DEPARTMENT_MANAGER" (
+  "emp_id" INT,
+  "dmpt_id" INT
+);
+
+CREATE INDEX "PK/FK" ON  "DEPARTMENT_MANAGER" ("emp_id");
+
+CREATE TABLE "PACKAGE" (
+  "pk_id" SERIAL,
+  "flt_id" INT,
+  "ht_id" INT,
+  "pk_start" DATE,
+  "pk_end" DATE,
+  "pk_discount" DECIMAL(5,4),
+  "pk_carRented" BOOL,
+  "pk_pricePP" DECIMAL(5,4),
+  PRIMARY KEY ("pk_id"),
+  CONSTRAINT "FK_PACKAGE.pk_id"
+    FOREIGN KEY ("pk_id")
+      REFERENCES "BRANCH_PACKAGE"("pk_id")
+);
+
+CREATE TABLE "HOTEL" (
+  "ht_id" SERIAL,
+  "ht_name" VARCHAR(50),
+  "ht_rating" CHAR(5),
+  "ht_country" CHAR(2),
+  "ht_addressLine1" VARCHAR(150),
+  "ht_city" VARCHAR(50),
+  "ht_postcode" VARCHAR(8),
+  "ht_phoneNum" VARCHAR(20),
+  "ht_numOfRooms" INT,
+  PRIMARY KEY ("ht_id"),
+  CONSTRAINT "FK_HOTEL.ht_id"
+    FOREIGN KEY ("ht_id")
+      REFERENCES "PACKAGE"("ht_id")
+);
+
+CREATE TABLE "ROOM" (
+  "rm_id" SERIAL,
+  "ht_id" INT,
+  "rm_type" VARCHAR(20),
+  "rm_occupied" BOOL,
+  "rm_extraDetails" TEXT,
+  PRIMARY KEY ("rm_id"),
+  CONSTRAINT "FK_ROOM.rm_id"
+    FOREIGN KEY ("rm_id")
+      REFERENCES "HOTEL"("ht_id")
+);
+
+CREATE TABLE "SUPERVISOR" (
+  "emp_id" INT,
+  "supvr_bonus" INT,
+  "supvr_startDate" DATE
+);
+
+CREATE INDEX "PK/FK" ON  "SUPERVISOR" ("emp_id");
+
+CREATE TABLE "FULLTIME" (
+  "emp_id" INT,
+  "ft_bonusScheme" TEXT,
+  "ft_holidayAllowance" INT
+);
+
+CREATE INDEX "PK/FK" ON  "FULLTIME" ("emp_id");
+
+CREATE TABLE "FLIGHT" (
+  "flt_id" SERIAL,
+  "flt_locationStart" CHAR(2),
+  "flt_locationEnd" CHAR(2),
+  "flt_date" DATE,
+  "flt_boarding" TIME,
+  PRIMARY KEY ("flt_id"),
+  CONSTRAINT "FK_FLIGHT.flt_id"
+    FOREIGN KEY ("flt_id")
+      REFERENCES "PACKAGE"("flt_id")
+);
+
+CREATE TABLE "DEPARTMENT_EMPLOYEE" (
+  "emp_id" INT,
+  "dmpt_id" INT
+);
+
+CREATE INDEX "PK/FK" ON  "DEPARTMENT_EMPLOYEE" ("emp_id", "dmpt_id");
+
+CREATE TABLE "BRANCH" (
+  "br_id" SERIAL,
+  "br_address" VARCHAR(150),
+  "br_postcode" VARCHAR(8),
+  "br_city" VARCHAR(50),
+  PRIMARY KEY ("br_id")
+);
+
+CREATE TABLE "EMPLOYEE" (
+  "emp_id" SERIAL,
+  "br_id" INT,
+  "emp_password" VARCHAR(100),
+  "emp_fname" VARCHAR(50),
+  "emp_lname" VARCHAR(50),
+  "emp_dob" DATE,
+  "emp_address_line1" VARCHAR(150),
+  "emp_city" VARCHAR(50),
+  "emp_postcode" VARCHAR(8),
+  "emp_phone_number" VARCHAR(20),
+  PRIMARY KEY ("emp_id"),
+  CONSTRAINT "FK_EMPLOYEE.emp_id"
+    FOREIGN KEY ("emp_id")
+      REFERENCES "DEPARTMENT_EMPLOYEE"("emp_id"),
+  CONSTRAINT "FK_EMPLOYEE.emp_id"
+    FOREIGN KEY ("emp_id")
+      REFERENCES "BRANCH"("br_id")
+);
+
+CREATE TABLE "CUSTOMER" (
+  "cust_id" SERIAL,
+  "cust_fname" VARCHAR(50),
+  "cust_lname" VARCHAR(50),
+  "cust_dob" DATE,
+  "cust_addressLine1" VARCHAR(150),
+  "cust_city" VARCHAR(50),
+  "cust_postcode" VARCHAR(8),
+  "cust_phoneNum" VARCHAR(20),
+  "cust_email" VARCHAR(150),
+  PRIMARY KEY ("cust_id")
+);
+
+CREATE TABLE "PAYMENT" (
+  "pay_id" SERIAL,
+  "cust_id" INT,
+  "pay_status" BOOL,
+  "pay_numInstallments" INT,
+  "pay_remaining" INT,
+  PRIMARY KEY ("pay_id"),
+  CONSTRAINT "FK_PAYMENT.cust_id"
+    FOREIGN KEY ("cust_id")
+      REFERENCES "CUSTOMER"("cust_id")
+);
+
+CREATE TABLE "DEPARTMENT" (
+  "dmpt_id" SERIAL,
+  "dmpt_name" VARCHAR(25),
+  "dmpt_desc" TEXT,
+  PRIMARY KEY ("dmpt_id"),
+  CONSTRAINT "FK_DEPARTMENT.dmpt_id"
+    FOREIGN KEY ("dmpt_id")
+      REFERENCES "DEPARTMENT_EMPLOYEE"("dmpt_id")
+);
+
+CREATE TABLE "BRANCH_MANAGER" (
+  "emp_id" INT,
+  "br_id" INT
+);
+
+CREATE INDEX "PK/FK" ON  "BRANCH_MANAGER" ("emp_id");
+
+CREATE TABLE "BOOKING" (
+  "bk_id" SERIAL,
+  "cust_id" INT,
+  "pk_id" INT,
+  "bk_numChildren" INT,
+  "bk_numAdults" INT,
+  PRIMARY KEY ("bk_id"),
+  CONSTRAINT "FK_BOOKING.pk_id"
+    FOREIGN KEY ("pk_id")
+      REFERENCES "PACKAGE"("pk_id"),
+  CONSTRAINT "FK_BOOKING.cust_id"
+    FOREIGN KEY ("cust_id")
+      REFERENCES "CUSTOMER"("cust_id")
+);
+
+CREATE TABLE "MARKETING" (
+  "emp_id" INT,
+  "mk_specialism" VARCHAR(20),
+  "mk_communications" VARCHAR(20)
+);
+
+CREATE INDEX "PK/FK" ON  "MARKETING" ("emp_id");
+
+CREATE TABLE "SALES_PERSONAL" (
+  "emp_id" INT,
+  "sales_area" VARCHAR(20),
+  "sales_total" INT
+);
+
+CREATE INDEX "PK/FK" ON  "SALES_PERSONAL" ("emp_id");
+
+CREATE TABLE "HUMAN_RESOURCES" (
+  "emp_id" INT,
+  "hr_onIssue" BOOL,
+  "hr_sector" VARCHAR(20)
+);
+
+CREATE INDEX "PK/FK" ON  "HUMAN_RESOURCES" ("emp_id");
+
+CREATE TABLE "FINANCE" (
+  "emp_id" INT,
+  "fin_type" VARCHAR(12),
+  "fin_onTransaction" BOOL
+);
+
+CREATE INDEX "PK/FK" ON  "FINANCE" ("emp_id");
+
+CREATE TABLE "PARTTIME" (
+  "emp_id" INT,
+  "pt_weeklyHours" INT,
+  "pt_hourlyRate" INT
+);
+
+CREATE INDEX "PK/FK" ON  "PARTTIME" ("emp_id");
+
