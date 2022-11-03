@@ -42,9 +42,9 @@ CREATE TABLE PACKAGE (
     ht_id INT NOT NULL,
     pk_start DATE NOT NULL,
     pk_end DATE NOT NULL,
-    pk_discount DECIMAL(5,4) NOT NULL,
+    pk_discount DECIMAL(5,2) NOT NULL,
     pk_carRented BOOL NOT NULL,
-    pk_pricePP DECIMAL(5,4) NOT NULL,
+    pk_pricePP DECIMAL(5,2) NOT NULL,
         FOREIGN KEY (flt_id)
             REFERENCES FLIGHT(flt_id)
             ON DELETE CASCADE,
@@ -235,19 +235,19 @@ CREATE TABLE BRANCH_MANAGER (
 );
 
 
--- END
 
 
+-- INSERTS 
 
 
-
-INSERT INTO HOTEL (ht_name,ht_rating,ht_country,ht_addressLine1,ht_city,ht_postcode,ht_phoneNum,ht_numOfRooms,ht_extraDetails)
+INSERT INTO HOTEL (ht_name, ht_rating, ht_country, ht_addressLine1, ht_city, ht_postcode, ht_phoneNum, ht_totalRooms, ht_extraDetails)
 VALUES 
-    ('Crown',3,'UK','69 Church Lane ','LERWICK','ZE1 0AA','0783213984',52,'pool - catered - room service available'),
-    ('Jamersons',5,'UK','28 Manchester Road','SUTTON','SM1 5CW','0763613484',32,'non catered - room service - 24 hour security')
+    ('Octopus',3,'Fi','waya island','Fiji','ZE1 0AA','1172051731',52,'pool - catered - room service available'),
+    ('Jamersons',5,'US','28 Manchester Road','SUTTON','SM1 5CW','0763613484',32,'non catered - room service - 24 hour security'),
+    ('Badrutts palace',5,'Sw','Via Serlas 27','St. Moritz','SM1 5CW','0763613484',32,'non catered - room service - 24 hour security')
 ;
 
-INSERT INTO ROOM (ht_id,rm_type,rm_numOfRoomType,rm_extraDetails)
+INSERT INTO ROOM (ht_id, rm_type,rm_numOfRoomType, rm_extraDetails)
 VALUES
     
     (1,'small room','32','comes with onsweet, 2 singles,access to pool from 0700 - 1600'),
@@ -256,3 +256,141 @@ VALUES
     (2,'medium room','10','comes with onsweet, 2 singles'),
     (2,'large room','10','comes with onsweet, 2 doubles')
 ;
+
+INSERT INTO CUSTOMER (cust_fname, cust_lname, cust_dob, cust_addressLine1, cust_city, cust_postcode, cust_phoneNum, cust_email)
+VALUES
+('Jim','Bob','3-14-1967','62 Heatons Bank','Rawmarsh','S62 5RZ','7111 277692','marcelo65@hotmail.com'),
+('Jack','Ram','7-29-1990','44 New Road','Nantyglo','NP23 4JT','776 533132','khalid21@gmail.com'),
+('Mark','Smith','12-25-1984','51 Hullen Edge Lane','Elland','HX5 0QS','737 882501','wilfredo_schmidt55@gmail.com')
+;
+
+INSERT INTO PAYMENT (cust_id, pay_status, pay_numInstallments, pay_remaining)
+VALUES
+(1,'true',0,0),
+(2,'false',8,2000),
+(3,'false',3,300)
+;
+
+INSERT INTO FLIGHT (flt_locationStart, flt_locationEnd, flt_date, flt_boarding)
+VALUES
+('UK','US','6-13-2023','14:00:00'),
+('UK','SW','7-24-2023','20:00:00'),
+('UK','Fi','4-10-2023','07:00:00')
+;
+
+INSERT INTO PACKAGE (flt_id, ht_id, pk_start, pk_end, pk_discount, pk_carRented, pk_pricePP)
+VALUES
+(1,2,'6-13-2023','6-27-2023',0.0,'true',500.85),
+(2,3,'7-24-2023','8-03-2023',0.0,'false',650.99),
+(3,1,'4-10-2023','4-18-2023',0.0,'false',800.32)
+;
+
+INSERT INTO BOOKING (cust_id,pk_id,bk_numChildren,bk_numAdults)
+VALUES
+(1,1,2,2),
+(2,1,0,2),
+(3,2,3,2)
+;
+
+INSERT INTO BRANCH (br_address, br_postcode, br_city)
+VALUES
+('63 Springfield Road','CB605DF','CAMBRIDGE'),
+('46 School Lane','SR328FV','SUNDERLAND'),
+('62 The Grove','L863DY','LIVERPOOL')
+;
+
+INSERT INTO BRANCH_PACKAGE (pk_id, br_id)
+VALUES
+(1,1),
+(1,2),
+(1,3),
+(2,1),
+(2,2),
+(2,3),
+(3,1),
+(3,2),
+(3,3)
+;
+
+INSERT INTO EMPLOYEE (br_id, emp_password, emp_fname, emp_lname, emp_dob, emp_addressLine1, emp_city, emp_postcode, emp_phoneNum)
+VALUES
+()
+;
+
+INSERT INTO DEPARTMENT (dmpt_name, dmpt_desc)
+VALUES
+()
+;
+
+INSERT INTO DEPARTMENT_EMPLOYEE (emp_id, dmpt_id)
+VALUES
+()
+;
+
+INSERT INTO FULLTIME (emp_id, ft_bonusScheme, ft_holidayAllowance)
+VALUES
+()
+;
+
+INSERT INTO PARTTIME (emp_id, pt_weeklyHours, pt_hourlyRate)
+VALUES
+()
+;
+
+INSERT INTO HUMAN_RESOURCES (emp_id, hr_onIssue, hr_sector)
+VALUES
+()
+;
+
+INSERT INTO MARKETING (emp_id, mk_specialism, mk_communications)
+VALUES
+()
+;
+
+INSERT INTO SALES_PERSONAL (emp_id, sales_area, sales_total) 
+VALUES
+()
+;
+
+INSERT INTO QUALITY_CONTROL (emp_id, qc_weekltCheck, qc_totalReports)
+VALUES
+()
+;
+
+INSERT INTO FINANCE (emp_id, fin_type, fin_onTransaction)
+VALUES
+()
+;
+
+INSERT INTO SUPERVISOR (emp_id, supvr_bonus, supvr_startDate) 
+VALUES
+()
+;
+
+INSERT INTO DEPARTMENT_MANAGER (emp_id, dmpt_id) 
+VALUES
+()
+;
+
+INSERT INTO BRANCH_MANAGER (emp_id, br_id)
+VALUES
+()
+;
+-- END
+
+SELECT CUSTOMER.cust_id,cust_lname,cust_phoneNum,pay_status,pay_numInstallments,pay_remaining
+FROM CUSTOMER
+    INNER JOIN PAYMENT ON
+    CUSTOMER.cust_id = PAYMENT.cust_id
+WHERE pay_status = 'f';
+
+SELECT CUSTOMER.cust_lname,flt_date,flt_boarding,flt_locationEnd
+FROM CUSTOMER
+    INNER JOIN BOOKING ON
+    CUSTOMER.cust_id = BOOKING.cust_id
+    INNER JOIN PACKAGE ON
+    BOOKING.pk_id = PACKAGE.pk_id
+    INNER JOIN FLIGHT ON
+    PACKAGE.flt_id = FLIGHT.flt_id
+WHERE CUSTOMER.cust_id = 1;
+
