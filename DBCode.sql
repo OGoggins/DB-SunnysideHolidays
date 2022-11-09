@@ -84,7 +84,7 @@ CREATE TABLE PAYMENT (
     cust_id INT NOT NULL,
     pay_status BOOL NOT NULL,
     pay_numInstallments INT NOT NULL,
-    pay_remaining INT NOT NULL,
+    pay_remaining DECIMAL(5,2) NOT NULL,
         FOREIGN KEY (cust_id)
             REFERENCES CUSTOMER(cust_id)
             ON DELETE CASCADE
@@ -111,6 +111,7 @@ CREATE TABLE BRANCH_PACKAGE (
 CREATE TABLE EMPLOYEE (
     emp_id SERIAL PRIMARY KEY,
     br_id INT NOT NULL,
+    dmpt_id INT NOT NULL,
     emp_password VARCHAR(100) NOT NULL,
     emp_fname VARCHAR(50) NOT NULL,
     emp_lname VARCHAR(50) NOT NULL,
@@ -119,6 +120,12 @@ CREATE TABLE EMPLOYEE (
     emp_city VARCHAR(50) NOT NULL,
     emp_postcode VARCHAR(8) NOT NULL,
     emp_phoneNum VARCHAR(20) NOT NULL
+        FOREIGN KEY (br_id)
+            REFERENCES BRANCH(br_id)
+            ON DELETE CASCADE,
+        FOREIGN KEY (dmpt_id)
+            REFERENCES DEPARTMENT(dmpt_id)
+            ON DELETE CASCADE
 );
 
 CREATE TABLE DEPARTMENT (
@@ -127,16 +134,6 @@ CREATE TABLE DEPARTMENT (
     dmpt_desc TEXT
 );
 
-CREATE TABLE DEPARTMENT_EMPLOYEE (
-    emp_id INT NOT NULL,
-    dmpt_id INT NOT NULL,
-        FOREIGN KEY (emp_id)
-            REFERENCES EMPLOYEE(emp_id)
-            ON DELETE CASCADE,
-        FOREIGN KEY (dmpt_id)
-            REFERENCES DEPARTMENT(dmpt_id)
-            ON DELETE CASCADE
-);
 
 CREATE TABLE FULLTIME (
     emp_id INT NOT NULL,
@@ -150,8 +147,8 @@ CREATE TABLE FULLTIME (
 -- talk about data in tables eg full and part time
 CREATE TABLE PARTTIME (
     emp_id INT NOT NULL,
-    pt_weeklyHours INT NOT NULL,
-    pt_hourlyRate INT NOT NULL,
+    pt_weeklyHours DECIMAL(5,2) NOT NULL,
+    pt_hourlyRate DECIMAL(5,2) NOT NULL,
         FOREIGN KEY (emp_id)
             REFERENCES EMPLOYEE(emp_id)
             ON DELETE CASCADE
@@ -216,7 +213,7 @@ CREATE TABLE DEPARTMENT_MANAGER (
     emp_id INT NOT NULL,
     dmpt_id INT NOT NULL,
         FOREIGN KEY (emp_id)
-            REFERENCES EMPLOYEE(emp_id)
+            REFERENCES SUPERVISOR(emp_id)
             ON DELETE CASCADE,
         FOREIGN KEY (dmpt_id)
             REFERENCES DEPARTMENT(dmpt_id)
@@ -227,7 +224,7 @@ CREATE TABLE BRANCH_MANAGER (
     emp_id INT NOT NULL,
     br_id INT NOT NULL,
         FOREIGN KEY (emp_id)
-            REFERENCES EMPLOYEE(emp_id)
+            REFERENCES SUPERVISOR(emp_id)
             ON DELETE CASCADE,
         FOREIGN KEY (br_id)
             REFERENCES BRANCH(br_id)
@@ -314,27 +311,48 @@ VALUES
 
 INSERT INTO EMPLOYEE (br_id, emp_password, emp_fname, emp_lname, emp_dob, emp_addressLine1, emp_city, emp_postcode, emp_phoneNum)
 VALUES
-()
+(1,'123','Dan','Sung','12-23-2000','1 North Road','EAST CENTRAL LONDON','EC41 9GS','7700 900242'),
+(1,'password','Joss','Denise','03-27-1990','7 Station Road','LLANDUDNO','LL32 5AW','7700 900621'),
+(1,'fijds','Deimne','Wambdi','09-01-1986','397 The Avenue','PORTSMOUTH','PO33 5JH','07700 900755'),
+(2,'hfguyw','Darya','Eustacia','10-16-2002','38 Alexander Road','COLCHESTER','CO2 8BP','07700 900160'),
+(2,'djks','Siri','Killa','11-14-1975','9772 Highfield Road','DORCHESTER','DT16 3BR','07700 900111'),
+(3,'password21','Ocean','Whitney','05-25-1984','84 South Street','WAKEFIELD','WF18 1KF','07700 900194')
 ;
 
 INSERT INTO DEPARTMENT (dmpt_name, dmpt_desc)
 VALUES
-()
+('Human_Resources','Deals with issues between employees.'), 
+('Marketing','Work to advertise the company.'), 
+('Sales_Personal','Deals with customers.'),
+('Quality_Control','Deals with complaints from customers.'),
+('Finance','Work with keeping the branch up to date on tax.'),
+('Supervisor','Manages employees.'),
+('Departments_Manager','Makes sure all departments are working properly.'),
+('Branch_Manager','Makes sure the branch is working properly.')
 ;
 
 INSERT INTO DEPARTMENT_EMPLOYEE (emp_id, dmpt_id)
 VALUES
-()
+(1,3),
+(2,3),
+(3,6),
+(4,4),
+(5,5),
+(6,6)
 ;
 
 INSERT INTO FULLTIME (emp_id, ft_bonusScheme, ft_holidayAllowance)
 VALUES
-()
+(1,'no bonus',14),
+(2,'no bonus',14),
+(3,'no bonus',14),
+(4,'no bonus',14),
+(5,'no bonus',14)
 ;
 
 INSERT INTO PARTTIME (emp_id, pt_weeklyHours, pt_hourlyRate)
 VALUES
-()
+(6,18,10.50)
 ;
 
 INSERT INTO HUMAN_RESOURCES (emp_id, hr_onIssue, hr_sector)
@@ -394,3 +412,9 @@ FROM CUSTOMER
     PACKAGE.flt_id = FLIGHT.flt_id
 WHERE CUSTOMER.cust_id = 1;
 
+
+SELECT emp_id
+FROM DEPARTMENT_EMPLOYEE 
+    INNER JOIN DEPARTMENT ON
+    DEPARTMENT_EMPLOYEE.dmpt_id = DEPARTMENT.dmpt_id
+WHERE DEPARTMENT.dmpt_id = 1;
