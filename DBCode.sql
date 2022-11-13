@@ -84,7 +84,7 @@ CREATE TABLE PAYMENT (
     cust_id INT NOT NULL,
     pay_status BOOL NOT NULL,
     pay_numInstallments INT NOT NULL,
-    pay_remaining DECIMAL(5,2) NOT NULL,
+    pay_remaining DECIMAL(6,2) NOT NULL,
         FOREIGN KEY (cust_id)
             REFERENCES CUSTOMER(cust_id)
             ON DELETE CASCADE
@@ -108,10 +108,16 @@ CREATE TABLE BRANCH_PACKAGE (
             ON DELETE CASCADE
 );
 
+CREATE TABLE DEPARTMENT (
+    dmpt_id SERIAL PRIMARY KEY,
+    dmpt_name VARCHAR(25) NOT NULL,
+    dmpt_desc TEXT
+);
+
 CREATE TABLE EMPLOYEE (
     emp_id SERIAL PRIMARY KEY,
     br_id INT NOT NULL,
-    dmpt_id INT NOT NULL,
+    dmpt_id INT,
     emp_password VARCHAR(100) NOT NULL,
     emp_fname VARCHAR(50) NOT NULL,
     emp_lname VARCHAR(50) NOT NULL,
@@ -119,7 +125,7 @@ CREATE TABLE EMPLOYEE (
     emp_addressLine1 VARCHAR(150) NOT NULL,
     emp_city VARCHAR(50) NOT NULL,
     emp_postcode VARCHAR(8) NOT NULL,
-    emp_phoneNum VARCHAR(20) NOT NULL
+    emp_phoneNum VARCHAR(20) NOT NULL,
         FOREIGN KEY (br_id)
             REFERENCES BRANCH(br_id)
             ON DELETE CASCADE,
@@ -128,11 +134,7 @@ CREATE TABLE EMPLOYEE (
             ON DELETE CASCADE
 );
 
-CREATE TABLE DEPARTMENT (
-    dmpt_id SERIAL PRIMARY KEY,
-    dmpt_name VARCHAR(25) NOT NULL,
-    dmpt_desc TEXT
-);
+
 
 
 CREATE TABLE FULLTIME (
@@ -201,7 +203,7 @@ CREATE TABLE FINANCE (
 );
 
 CREATE TABLE SUPERVISOR (
-    emp_id INT NOT NULL,
+    emp_id INT NOT NULL UNIQUE,
     supvr_bonus INT NOT NULL,
     supvr_startDate DATE NOT NULL,
         FOREIGN KEY (emp_id)
@@ -244,14 +246,15 @@ VALUES
     ('Badrutts palace',5,'Sw','Via Serlas 27','St. Moritz','SM1 5CW','0763613484',32,'non catered - room service - 24 hour security')
 ;
 
-INSERT INTO ROOM (ht_id, rm_type,rm_numOfRoomType, rm_extraDetails)
+INSERT INTO ROOM (ht_id, rm_type, rm_numOfRoomType, rm_extraDetails)
 VALUES
-    
     (1,'small room','32','comes with onsweet, 2 singles,access to pool from 0700 - 1600'),
     (1,'large room','20','comes with onsweet, 2 doubles,access to pool from 0600 - 2030'),
     (2,'small room','12','comes with shared bathroom, 1 single'),
     (2,'medium room','10','comes with onsweet, 2 singles'),
-    (2,'large room','10','comes with onsweet, 2 doubles')
+    (2,'large room','10','comes with onsweet, 2 doubles'),
+    (3, 'medium room', '55', 'comes with onweet, 1 double'),
+    (3, 'large room', '105', 'comes with onweet, 2 double')
 ;
 
 INSERT INTO CUSTOMER (cust_fname, cust_lname, cust_dob, cust_addressLine1, cust_city, cust_postcode, cust_phoneNum, cust_email)
@@ -263,9 +266,9 @@ VALUES
 
 INSERT INTO PAYMENT (cust_id, pay_status, pay_numInstallments, pay_remaining)
 VALUES
-(1,'true',0,0),
-(2,'false',8,2000),
-(3,'false',3,300)
+(1, 'true', 0, 0.0000),
+(2,'false', 8, 200.00),
+(3,'false',3,300.00)
 ;
 
 INSERT INTO FLIGHT (flt_locationStart, flt_locationEnd, flt_date, flt_boarding)
@@ -309,16 +312,6 @@ VALUES
 (3,3)
 ;
 
-INSERT INTO EMPLOYEE (br_id, emp_password, emp_fname, emp_lname, emp_dob, emp_addressLine1, emp_city, emp_postcode, emp_phoneNum)
-VALUES
-(1,'123','Dan','Sung','12-23-2000','1 North Road','EAST CENTRAL LONDON','EC41 9GS','7700 900242'),
-(1,'password','Joss','Denise','03-27-1990','7 Station Road','LLANDUDNO','LL32 5AW','7700 900621'),
-(1,'fijds','Deimne','Wambdi','09-01-1986','397 The Avenue','PORTSMOUTH','PO33 5JH','07700 900755'),
-(2,'hfguyw','Darya','Eustacia','10-16-2002','38 Alexander Road','COLCHESTER','CO2 8BP','07700 900160'),
-(2,'djks','Siri','Killa','11-14-1975','9772 Highfield Road','DORCHESTER','DT16 3BR','07700 900111'),
-(3,'password21','Ocean','Whitney','05-25-1984','84 South Street','WAKEFIELD','WF18 1KF','07700 900194')
-;
-
 INSERT INTO DEPARTMENT (dmpt_name, dmpt_desc)
 VALUES
 ('Human_Resources','Deals with issues between employees.'), 
@@ -331,14 +324,15 @@ VALUES
 ('Branch_Manager','Makes sure the branch is working properly.')
 ;
 
-INSERT INTO DEPARTMENT_EMPLOYEE (emp_id, dmpt_id)
+INSERT INTO EMPLOYEE (br_id, dmpt_id, emp_password, emp_fname, emp_lname, emp_dob, emp_addressLine1, emp_city, emp_postcode, emp_phoneNum)
 VALUES
-(1,3),
-(2,3),
-(3,6),
-(4,4),
-(5,5),
-(6,6)
+(1, 1, '123','Dan','Sung','12-23-2000','1 North Road','EAST CENTRAL LONDON','EC41 9GS','7700 900242'),
+(1, 2, 'password','Joss','Denise','03-27-1990','7 Station Road','LLANDUDNO','LL32 5AW','7700 900621'),
+(1, 3, 'fijds','Deimne','Wambdi','09-01-1986','397 The Avenue','PORTSMOUTH','PO33 5JH','07700 900755'),
+(2, 4, 'hfguyw','Darya','Eustacia','10-16-2002','38 Alexander Road','COLCHESTER','CO2 8BP','07700 900160'),
+(2, 5, 'djks','Siri','Killa','11-14-1975','9772 Highfield Road','DORCHESTER','DT16 3BR','07700 900111'),
+(3, 8, 'password21','Ocean','Whitney','05-25-1984','84 South Street','WAKEFIELD','WF18 1KF','07700 900194'),
+(3, null, 'qwertyuiop','Sova','Yip','11-25-1988','1 Castle Street','EAST CENTRAL LONDON','EC91 9CB','7700 933242')
 ;
 
 INSERT INTO FULLTIME (emp_id, ft_bonusScheme, ft_holidayAllowance)
@@ -347,12 +341,13 @@ VALUES
 (2,'no bonus',14),
 (3,'no bonus',14),
 (4,'no bonus',14),
-(5,'no bonus',14)
+(5,'no bonus',14),
+(6,'no bonus',16)
 ;
 
 INSERT INTO PARTTIME (emp_id, pt_weeklyHours, pt_hourlyRate)
 VALUES
-(6,18,10.50)
+(7,18,10.50)
 ;
 
 INSERT INTO HUMAN_RESOURCES (emp_id, hr_onIssue, hr_sector)
@@ -395,26 +390,3 @@ VALUES
 ()
 ;
 -- END
-
-SELECT CUSTOMER.cust_id,cust_lname,cust_phoneNum,pay_status,pay_numInstallments,pay_remaining
-FROM CUSTOMER
-    INNER JOIN PAYMENT ON
-    CUSTOMER.cust_id = PAYMENT.cust_id
-WHERE pay_status = 'f';
-
-SELECT CUSTOMER.cust_lname,flt_date,flt_boarding,flt_locationEnd
-FROM CUSTOMER
-    INNER JOIN BOOKING ON
-    CUSTOMER.cust_id = BOOKING.cust_id
-    INNER JOIN PACKAGE ON
-    BOOKING.pk_id = PACKAGE.pk_id
-    INNER JOIN FLIGHT ON
-    PACKAGE.flt_id = FLIGHT.flt_id
-WHERE CUSTOMER.cust_id = 1;
-
-
-SELECT emp_id
-FROM DEPARTMENT_EMPLOYEE 
-    INNER JOIN DEPARTMENT ON
-    DEPARTMENT_EMPLOYEE.dmpt_id = DEPARTMENT.dmpt_id
-WHERE DEPARTMENT.dmpt_id = 1;
