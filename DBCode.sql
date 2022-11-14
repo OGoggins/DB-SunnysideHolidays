@@ -536,9 +536,19 @@ FROM package_pricing;
 
 
 -- Best Performing Package
+SELECT
+  BOOKING.pk_id AS "Package Number",
+  COUNT(BOOKING.pk_id) AS "Most Popular Package"
+FROM BOOKING
+GROUP BY BOOKING.pk_id
+ORDER BY "Most Popular Package" DESC
+LIMIT 1;
+
 
 -- Details about a specific booking
 
+
 -- Package payment status
+
 
 -- Other one (idk)
