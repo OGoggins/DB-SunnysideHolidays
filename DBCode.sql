@@ -2,6 +2,10 @@ CREATE DATABASE SunnySideHolidays;
 
 \c sunnysideholidays
 
+/*--------------------------*/
+/*---------DATABASE---------*/
+/*--------------------------*/
+
 CREATE TABLE HOTEL (
   ht_id SERIAL PRIMARY KEY,
   ht_name VARCHAR(50) NOT NULL,
@@ -233,9 +237,9 @@ CREATE TABLE BRANCH_MANAGER (
 
 
 
-
--- INSERTS 
-
+/*--------------------------*/
+/*---------INSERTS---------*/
+/*--------------------------*/
 
 INSERT INTO HOTEL (ht_name, ht_rating, ht_country, ht_addressLine1, ht_city, ht_postcode, ht_phoneNum, ht_totalRooms, ht_extraDetails)
 VALUES 
@@ -313,7 +317,7 @@ VALUES
 (4, 2, 0, 4),
 (5, 3, 2, 4),
 (6, 3, 0, 4),
-(7, 4, 5, 2),
+(7, 3, 5, 2),
 (8, 4, 2, 2),
 (9, 5, 2, 2),
 (10, 5, 0, 1);
@@ -492,3 +496,27 @@ VALUES
 (12, 2),
 (18, 3);
 -- END
+
+/*--------------------------*/
+/*---------Queries---------*/
+/*--------------------------*/
+
+-- Total Package cost per booking
+-- add calculate with discount
+-- maybe create a view for calculation
+SELECT
+  CUSTOMER.cust_email AS "Customer Email",
+  (BOOKING.bk_numAdults + BOOKING.bk_numChildren) AS "Total Tourists",
+  CONCAT('£', PACKAGE.pk_pricePP) AS "Price Per Person",
+  CONCAT('£', ((BOOKING.bk_numAdults + BOOKING.bk_numChildren) * PACKAGE.pk_pricePP)) AS "Total Cost"
+FROM BOOKING
+JOIN CUSTOMER ON BOOKING.cust_id = CUSTOMER.cust_id
+JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id;
+
+-- Best Performing Package
+
+-- Details about a specific booking
+
+-- Package payment status
+
+-- Other one (idk)
