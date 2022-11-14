@@ -546,7 +546,36 @@ LIMIT 1;
 
 
 -- Details about a specific booking
+SELECT
+  (
+    SELECT 
+      CONCAT(CUSTOMER.cust_email, ' | ', CUSTOMER.cust_phoneNum) 
+    FROM CUSTOMER 
+    WHERE CUSTOMER.cust_id = BOOKING.cust_id) AS "Customer Contacts",
+  BOOKING.pk_id AS "Package Number",
+  CONCAT(PACKAGE.pk_start, ' - ', PACKAGE.pk_end) AS "Package Time Frame",
+  (
+    SELECT
+      CONCAT(FLIGHT.flt_date, ' at ', FLIGHT.flt_boarding, ' - ', FLIGHT.flt_locationStart, ' to ', FLIGHT.flt_locationEnd)
+    FROM FLIGHT 
+    WHERE FLIGHT.flt_id = PACKAGE.flt_id
+  ) AS "Flight Information",
+  (SELECT 
+    HOTEL.ht_name 
+  FROM HOTEL 
+  WHERE HOTEL.ht_id = PACKAGE.ht_id) AS "Hotel"
+FROM BOOKING
+JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id
+WHERE BOOKING.bk_id = 3;
 
+--  Planning Time: 0.278 ms
+--  Execution Time: 0.173 ms
+
+-- customer email & phone num
+-- package number
+-- holiday start and end
+-- flight time for package
+-- hotel they staying at
 
 -- Package payment status
 
