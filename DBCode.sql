@@ -87,8 +87,8 @@ CREATE TABLE PAYMENT (
   pay_id SERIAL PRIMARY KEY,
   cust_id INT NOT NULL UNIQUE,
   pay_status BOOL NOT NULL,
-  pay_numInstallments INT NOT NULL,
-  pay_remaining DECIMAL(6,2) NOT NULL,
+  pay_totalInstallments INT NOT NULL,
+  pay_currentInstallment INT NOT NULL,
     FOREIGN KEY (cust_id)
       REFERENCES CUSTOMER(cust_id)
       ON DELETE CASCADE
@@ -280,18 +280,18 @@ VALUES
 ('Timmy', 'Dock', '1985-07-20', '13 Castle Road', 'Oxford', 'OX33 1SP', '+44 7272 072348' , 'timmydock@gmail.com'),
 ('Loudred', 'Smock', '1984-06-25', '19 Lapton Road', 'Oxford', 'OX10 1EA', '+44 7235 072348' , 'lourdredsmock@gmail.com');
 
-INSERT INTO PAYMENT (cust_id, pay_status, pay_numInstallments, pay_remaining)
+INSERT INTO PAYMENT (cust_id, pay_status, pay_totalInstallments, pay_currentInstallment)
 VALUES
-(1, 'false', 1, 0000.00),
-(2, 'true', 2, 400.00),
-(3, 'false', 1, 0000.00),
-(4, 'true', 3, 533.00),
-(5, 'false', 1, 0000.00),
-(6, 'true', 4, 3750.00),
-(7, 'false', 1, 0000.00),
-(8, 'true', 5, 3200.00),
-(9, 'false', 1, 0000.00),
-(10,'true', 6, 416.00);
+(1, 'true', 1, 1),
+(2, 'false', 2, 1),
+(3, 'true', 1, 1),
+(4, 'true', 1, 1),
+(5, 'true', 1, 1),
+(6, 'false', 4, 2),
+(7, 'true', 1, 1),
+(8, 'true', 1, 1),
+(9, 'true', 1, 1),
+(10,'false', 6, 4);
 
 INSERT INTO FLIGHT (flt_locationStart, flt_locationEnd, flt_date, flt_boarding)
 VALUES
@@ -495,13 +495,12 @@ VALUES
 (6, 1),
 (12, 2),
 (18, 3);
--- END
+
+
 
 /*--------------------------*/
-/*---------Queries---------*/
+/*----------Views----------*/
 /*--------------------------*/
-
--- Total Package cost per booking
 CREATE VIEW
   package_pricing AS
 SELECT
@@ -514,6 +513,13 @@ SELECT
 FROM BOOKING
 JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id;
 
+
+
+/*--------------------------*/
+/*---------Queries---------*/
+/*--------------------------*/
+
+-- Total Package cost per booking
 SELECT
   (
     SELECT 
@@ -525,16 +531,6 @@ SELECT
   CONCAT('£', (package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson")) AS "Total Overall Cost"
 FROM package_pricing;
 
--- SELECT
---   CUSTOMER.cust_email AS "Customer Email",
---   CUSTOMER.cust_phoneNum AS "Customer Phonenumber",
---   package_pricing."pp_totalTourists" AS "Total Tourists",
---   CONCAT('£', (package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson")) AS "Total Overall Cost"
--- FROM package_pricing, CUSTOMER
--- JOIN BOOKING ON BOOKING.cust_id = CUSTOMER.cust_id
--- WHERE package_pricing."pp_bookingNumber" = BOOKING.bk_id;
-
-
 -- Best Performing Package
 SELECT
   BOOKING.pk_id AS "Package Number",
@@ -543,7 +539,6 @@ FROM BOOKING
 GROUP BY BOOKING.pk_id
 ORDER BY "Most Popular Package" DESC
 LIMIT 1;
-
 
 -- Details about a specific booking
 SELECT
@@ -560,24 +555,45 @@ SELECT
     FROM FLIGHT 
     WHERE FLIGHT.flt_id = PACKAGE.flt_id
   ) AS "Flight Information",
-  (SELECT 
+  (
+  SELECT 
     HOTEL.ht_name 
   FROM HOTEL 
-  WHERE HOTEL.ht_id = PACKAGE.ht_id) AS "Hotel"
+  WHERE HOTEL.ht_id = PACKAGE.ht_id
+  ) AS "Hotel"
 FROM BOOKING
 JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id
 WHERE BOOKING.bk_id = 3;
 
---  Planning Time: 0.278 ms
---  Execution Time: 0.173 ms
-
--- customer email & phone num
--- package number
--- holiday start and end
--- flight time for package
--- hotel they staying at
-
 -- Package payment status
-
+  
+EXPLAIN ANALYZE
+SELECT
+  BOOKING.bk_id AS "Booking Number",
+  PACKAGE.pk_id AS "Package Number",
+  CONCAT(CUSTOMER.cust_email, ' | ', CUSTOMER.cust_phoneNum) AS "Customer Contacts",
+  (
+    SELECT 
+      CONCAT('£', (package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson")) 
+    FROM package_pricing
+    WHERE package_pricing."pp_customerNumber" = BOOKING.cust_id
+  ) AS "Total Cost",
+  (
+    SELECT
+      ROUND((((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") / PAYMENT.pay_totalInstallments) * PAYMENT.pay_currentInstallment), 2)
+    FROM package_pricing
+    WHERE package_pricing."pp_customerNumber" = BOOKING.cust_id
+  ) AS "Payment Made",
+  (
+    SELECT
+      ROUND(((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") - (((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") / PAYMENT.pay_totalInstallments) * PAYMENT.pay_currentInstallment)), 2)
+    FROM package_pricing
+    WHERE package_pricing."pp_customerNumber" = BOOKING.cust_id
+  ) AS "Payment Left"
+FROM BOOKING
+JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id
+JOIN CUSTOMER ON CUSTOMER.cust_id = BOOKING.cust_id
+JOIN PAYMENT ON PAYMENT.cust_id = CUSTOMER.cust_id
+WHERE PAYMENT.pay_status = 'false';
 
 -- Other one (idk)
