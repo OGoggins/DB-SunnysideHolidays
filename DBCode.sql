@@ -304,9 +304,9 @@ VALUES
 INSERT INTO PACKAGE (flt_id, ht_id, pk_start, pk_end, pk_discount, pk_carRented, pk_pricePP)
 VALUES
 (1, 1, '2023-01-11', '2023-02-01', 0.0, 'false', 200.00),
-(2, 2, '2023-01-10', '2023-02-01', 0.0, 'true', 200.00),
+(2, 2, '2023-01-10', '2023-02-01', 20.0, 'true', 200.00),
 (3, 3, '2023-01-09', '2023-02-01', 0.0, 'true', 1250.00),
-(4, 4, '2023-01-12', '2023-02-01', 0.0, 'false', 1000.00),
+(4, 4, '2023-01-12', '2023-02-01', 50.0, 'false', 1000.00),
 (5, 5, '2023-01-08', '2023-02-01', 0.0, 'false', 500.00);
 
 INSERT INTO BOOKING (cust_id, pk_id, bk_numChildren, bk_numAdults)
@@ -502,16 +502,38 @@ VALUES
 /*--------------------------*/
 
 -- Total Package cost per booking
--- add calculate with discount
--- maybe create a view for calculation
+CREATE VIEW
+  package_pricing AS
 SELECT
-  CUSTOMER.cust_email AS "Customer Email",
-  (BOOKING.bk_numAdults + BOOKING.bk_numChildren) AS "Total Tourists",
-  CONCAT('£', PACKAGE.pk_pricePP) AS "Price Per Person",
-  CONCAT('£', ((BOOKING.bk_numAdults + BOOKING.bk_numChildren) * PACKAGE.pk_pricePP)) AS "Total Cost"
+  BOOKING.bk_id AS "pp_bookingNumber",
+  BOOKING.cust_id AS "pp_customerNumber",
+  (BOOKING.bk_numAdults + BOOKING.bk_numChildren) AS "pp_totalTourists",
+  PACKAGE.pk_pricePP AS "pp_pricePerPerson",
+  PACKAGE.pk_discount AS "pp_packageDiscount",
+  ROUND((PACKAGE.pk_pricePP - (PACKAGE.pk_pricePP * (PACKAGE.pk_discount / 100))), 2) AS "pp_finalPricePerPerson"
 FROM BOOKING
-JOIN CUSTOMER ON BOOKING.cust_id = CUSTOMER.cust_id
 JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id;
+
+SELECT
+  (
+    SELECT 
+      CONCAT(CUSTOMER.cust_email, ' | ', CUSTOMER.cust_phoneNum) 
+    FROM CUSTOMER 
+    WHERE CUSTOMER.cust_id = package_pricing."pp_customerNumber"
+  ) AS "Customer Contacts",
+  package_pricing."pp_totalTourists" AS "Total Tourists",
+  CONCAT('£', (package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson")) AS "Total Overall Cost"
+FROM package_pricing;
+
+-- SELECT
+--   CUSTOMER.cust_email AS "Customer Email",
+--   CUSTOMER.cust_phoneNum AS "Customer Phonenumber",
+--   package_pricing."pp_totalTourists" AS "Total Tourists",
+--   CONCAT('£', (package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson")) AS "Total Overall Cost"
+-- FROM package_pricing, CUSTOMER
+-- JOIN BOOKING ON BOOKING.cust_id = CUSTOMER.cust_id
+-- WHERE package_pricing."pp_bookingNumber" = BOOKING.bk_id;
+
 
 -- Best Performing Package
 
