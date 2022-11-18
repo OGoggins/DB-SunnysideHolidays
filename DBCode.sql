@@ -344,6 +344,7 @@ VALUES
 ('Quality_Control', 'qc.sunnyside.ac.uk','Deals with complaints from customers.'),
 ('Finance', 'fin.sunnyside.ac.uk','Work with keeping the branch up to date on tax.'),
 ('Supervisor', 'supvr.sunnyside.ac.uk','Manages the departments or the whole branch.');
+('Supervisor', 'supvr.sunnyside.ac.uk','Manages the departments or the whole branch.');
 
 INSERT INTO EMPLOYEE (br_id, dmpt_id, emp_password, emp_fname, emp_lname, emp_dob, emp_addressLine1, emp_city, emp_postcode, emp_phoneNum)
 VALUES
