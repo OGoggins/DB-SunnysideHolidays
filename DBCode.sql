@@ -338,13 +338,13 @@ VALUES
 
 INSERT INTO DEPARTMENT (dmpt_name, dmpt_emailSUffix, dmpt_desc)
 VALUES
-('Human_Resources', 'hr.sunnyside.ac.uk','Deals with issues between employees.'), 
-('Marketing', 'mk.sunnyside.ac.uk','Work to advertise the company.'), 
-('Sales_Personal', 'sales.sunnyside.ac.uk','Deals with customers.'),
-('Quality_Control', 'qc.sunnyside.ac.uk','Deals with complaints from customers.'),
-('Finance', 'fin.sunnyside.ac.uk','Work with keeping the branch up to date on tax.'),
-('Supervisor', 'supvr.sunnyside.ac.uk','Manages the departments or the whole branch.');
-('Supervisor', 'supvr.sunnyside.ac.uk','Manages the departments or the whole branch.');
+('Human_Resources', 'hr.sunnyside.ac.uk', 'Deals with issues between employees.'), 
+('Marketing', 'mk.sunnyside.ac.uk', 'Work to advertise the company.'), 
+('Sales_Personal', 'sales.sunnyside.ac.uk', 'Deals with customers.'),
+('Quality_Control', 'qc.sunnyside.ac.uk', 'Deals with complaints from customers.'),
+('Finance', 'fin.sunnyside.ac.uk', 'Work with keeping the branch up to date on tax.'),
+('Supervisor', 'supvr.sunnyside.ac.uk', 'Manages the departments or the whole branch.'),
+('General', 'sunnyside.ac.uk', 'For employees that dont have a department.');
 
 INSERT INTO EMPLOYEE (br_id, dmpt_id, emp_password, emp_fname, emp_lname, emp_dob, emp_addressLine1, emp_city, emp_postcode, emp_phoneNum)
 VALUES
@@ -366,9 +366,9 @@ VALUES
 (3, 4, 'password82', 'Sophie', 'Sung', '1989-04-25', '16 Hanson Dene', 'London', 'NW6 0BX', '+44 7438 379111'), --16
 (3, 5, 'password81', 'Lily', 'Kim', '1990-05-26', '17 Blake Acre', 'London', 'NW1 3EX', '+44 7130 561331'), --17
 (3, 6, 'password80', 'Megan', 'Choi', '1991-06-27', '18 Atlas Corner', 'London', 'NW2 8PH', '+44 7149 090892'), --18
-(1, null, 'password93', 'Charlie', 'Cho', '1992-07-28', '19 Francis Laurels', 'Porstmouth', 'PO38 0XX', '+44 7911 868063'), --19
-(2, null, 'password86', 'Benjamin', 'Yun', '1993-08-29', '20 Union North', 'Oxford', 'OX30 9QG', '+44 7911 071634'), --20 
-(3, null, 'password79', 'Pheonix', 'Jung', '1994-09-30', '21 Woods Mill', 'London', 'NW7 7LN', '+44 7116 040128'), --21
+(1, 7, 'password93', 'Charlie', 'Cho', '1992-07-28', '19 Francis Laurels', 'Porstmouth', 'PO38 0XX', '+44 7911 868063'), --19
+(2, 7, 'password86', 'Benjamin', 'Yun', '1993-08-29', '20 Union North', 'Oxford', 'OX30 9QG', '+44 7911 071634'), --20 
+(3, 7, 'password79', 'Pheonix', 'Jung', '1994-09-30', '21 Woods Mill', 'London', 'NW7 7LN', '+44 7116 040128'), --21
 (1, 6, 'password01', 'Ai', 'Sato', '2000-01-27', '18 Elmtree Close', 'Portsmouth', 'PO19 8PN', '+44 7457 188038'), --22
 (1, 6, 'password02', 'Asahi', 'Suzuki', '1999-02-26', '18 Aspen Ridgeway', 'Portsmouth', 'PO8 9NN', '+44 7457 834101'), --23
 (1, 6, 'password03', 'Chiyo', 'Takahashi', '1998-03-25', '18 Curtis Gait', 'Portsmouth', 'PO14 5EW', '+44 7911 843679'), --24
