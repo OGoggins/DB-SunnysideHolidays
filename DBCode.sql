@@ -339,11 +339,11 @@ VALUES
 INSERT INTO DEPARTMENT (dmpt_name, dmpt_emailSUffix, dmpt_desc)
 VALUES
 ('Human_Resources', 'hr.sunnyside.ac.uk','Deals with issues between employees.'), 
-('Marketing', 'marketing.sunnyside.ac.uk','Work to advertise the company.'), 
+('Marketing', 'mk.sunnyside.ac.uk','Work to advertise the company.'), 
 ('Sales_Personal', 'sales.sunnyside.ac.uk','Deals with customers.'),
 ('Quality_Control', 'qc.sunnyside.ac.uk','Deals with complaints from customers.'),
-('Finance', 'finance.sunnyside.ac.uk','Work with keeping the branch up to date on tax.'),
-('Supervisor', 'supervisor.sunnyside.ac.uk','Manages the departments or the whole branch.');
+('Finance', 'fin.sunnyside.ac.uk','Work with keeping the branch up to date on tax.'),
+('Supervisor', 'supvr.sunnyside.ac.uk','Manages the departments or the whole branch.');
 
 INSERT INTO EMPLOYEE (br_id, dmpt_id, emp_password, emp_fname, emp_lname, emp_dob, emp_addressLine1, emp_city, emp_postcode, emp_phoneNum)
 VALUES
