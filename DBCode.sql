@@ -1,7 +1,3 @@
-CREATE DATABASE SunnySideHolidays;
-
-\c sunnysideholidays
-
 /*--------------------------*/
 /*---------DATABASE---------*/
 /*--------------------------*/
@@ -9,7 +5,7 @@ CREATE DATABASE SunnySideHolidays;
 CREATE TABLE HOTEL (
   ht_id SERIAL PRIMARY KEY,
   ht_name VARCHAR(50) NOT NULL,
-  ht_rating CHAR(5) NOT NULL,
+  ht_rating CHAR(1) NOT NULL,
   ht_country CHAR(2) NOT NULL,
   ht_addressLine1 VARCHAR(150) NOT NULL,
   ht_city VARCHAR(50) NOT NULL,
@@ -29,8 +25,6 @@ CREATE TABLE ROOM (
       REFERENCES HOTEL(ht_id)
       ON DELETE CASCADE
 );
-
-
 
 CREATE TABLE FLIGHT (
   flt_id SERIAL PRIMARY KEY,
@@ -139,12 +133,9 @@ CREATE TABLE EMPLOYEE (
       ON DELETE CASCADE
 );
 
-
-
-
 CREATE TABLE FULLTIME (
   emp_id INT NOT NULL UNIQUE,
-  ft_bonusScheme TEXT NOT NULL,
+  ft_bonusScheme TEXT,
   ft_holidayAllowance INT NOT NULL,
     FOREIGN KEY (emp_id)
       REFERENCES EMPLOYEE(emp_id)
@@ -189,7 +180,7 @@ CREATE TABLE SALES_PERSONAL (
 
 CREATE TABLE QUALITY_CONTROL (
   emp_id INT NOT NULL UNIQUE,
-  qc_weekltCheck BOOL NOT NULL,
+  qc_weeklyCheck BOOL NOT NULL,
   qc_totalReports INT NOT NULL,
     FOREIGN KEY (emp_id)
       REFERENCES EMPLOYEE(emp_id)
@@ -207,7 +198,7 @@ CREATE TABLE FINANCE (
 
 CREATE TABLE SUPERVISOR (
   emp_id INT NOT NULL UNIQUE,
-  supvr_bonus TEXT NOT NULL,
+  supvr_bonus TEXT,
   supvr_startDate DATE NOT NULL,
     FOREIGN KEY (emp_id)
       REFERENCES EMPLOYEE(emp_id)
@@ -235,8 +226,6 @@ CREATE TABLE BRANCH_MANAGER (
       REFERENCES BRANCH(br_id)
       ON DELETE CASCADE
 );
-
-
 
 /*--------------------------*/
 /*---------INSERTS---------*/
@@ -397,24 +386,24 @@ VALUES
 
 INSERT INTO FULLTIME (emp_id, ft_bonusScheme, ft_holidayAllowance)
 VALUES
-(1, 'no bonus', 14),
-(2, 'no bonus', 14),
-(3, 'no bonus', 14),
-(4, 'no bonus', 14),
-(5, 'no bonus', 14),
-(6, 'no bonus', 16),
-(7, 'no bonus', 14),
-(8, 'no bonus', 14),
-(9, 'no bonus', 14),
-(10, 'no bonus', 14),
-(11, 'no bonus', 14),
-(12, 'no bonus', 16),
-(13, 'no bonus', 14),
-(14, 'no bonus', 14),
-(15, 'no bonus', 14),
-(16, 'no bonus', 14),
-(17, 'no bonus', 14),
-(18, 'no bonus', 16);
+(1, null, 14),
+(2, null, 14),
+(3, null, 14),
+(4, null, 14),
+(5, null, 14),
+(6, null, 16),
+(7, null, 14),
+(8, null, 14),
+(9, null, 14),
+(10, null, 14),
+(11, null, 14),
+(12, null, 16),
+(13, null, 14),
+(14, null, 14),
+(15, null, 14),
+(16, null, 14),
+(17, null, 14),
+(18, null, 16);
 
 INSERT INTO PARTTIME (emp_id, pt_weeklyHours, pt_hourlyRate)
 VALUES
@@ -440,7 +429,7 @@ VALUES
 (9, 'packages', 21),
 (15, 'hotels', 31);
 
-INSERT INTO QUALITY_CONTROL (emp_id, qc_weekltCheck, qc_totalReports)
+INSERT INTO QUALITY_CONTROL (emp_id, qc_weeklyCheck, qc_totalReports)
 VALUES
 (4, 'true', 9),
 (10, 'true', 19),
@@ -454,24 +443,24 @@ VALUES
 
 INSERT INTO SUPERVISOR (emp_id, supvr_bonus, supvr_startDate) 
 VALUES
-(6, 'no bonus', '1970-01-28'),
-(12, 'no bonus', '1971-02-27'),
-(18, 'no bonus', '1972-03-26'),
-(22, 'no bonus', '1973-04-25'),
-(23, 'no bonus', '1974-05-24'),
-(24, 'no bonus', '1975-06-23'),
-(25, 'no bonus', '1976-07-22'),
-(26, 'no bonus', '1977-08-21'),
-(27, 'no bonus', '1978-09-20'),
-(28, 'no bonus', '1979-10-19'),
-(29, 'no bonus', '1971-11-18'),
-(30, 'no bonus', '1972-12-17'),
-(31, 'no bonus', '1973-01-16'),
-(32, 'no bonus', '1974-02-15'),
-(33, 'no bonus', '1975-03-14'),
-(34, 'no bonus', '1976-04-13'),
-(35, 'no bonus', '1977-05-12'),
-(36, 'no bonus', '1978-06-11');
+(6, null, '1970-01-28'),
+(12, null, '1971-02-27'),
+(18, null, '1972-03-26'),
+(22, null, '1973-04-25'),
+(23, null, '1974-05-24'),
+(24, null, '1975-06-23'),
+(25, null, '1976-07-22'),
+(26, null, '1977-08-21'),
+(27, null, '1978-09-20'),
+(28, null, '1979-10-19'),
+(29, null, '1971-11-18'),
+(30, null, '1972-12-17'),
+(31, null, '1973-01-16'),
+(32, null, '1974-02-15'),
+(33, null, '1975-03-14'),
+(34, null, '1976-04-13'),
+(35, null, '1977-05-12'),
+(36, null, '1978-06-11');
 
 INSERT INTO DEPARTMENT_MANAGER (emp_id, dmpt_id) 
 VALUES
@@ -567,8 +556,6 @@ JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id
 WHERE BOOKING.bk_id = 3;
 
 -- Package payment status
-  
-EXPLAIN ANALYZE
 SELECT
   BOOKING.bk_id AS "Booking Number",
   PACKAGE.pk_id AS "Package Number",
@@ -581,13 +568,13 @@ SELECT
   ) AS "Total Cost",
   (
     SELECT
-      ROUND((((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") / PAYMENT.pay_totalInstallments) * PAYMENT.pay_currentInstallment), 2)
+      CONCAT('£', ROUND((((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") / PAYMENT.pay_totalInstallments) * PAYMENT.pay_currentInstallment), 2))
     FROM package_pricing
     WHERE package_pricing."pp_customerNumber" = BOOKING.cust_id
   ) AS "Payment Made",
   (
     SELECT
-      ROUND(((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") - (((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") / PAYMENT.pay_totalInstallments) * PAYMENT.pay_currentInstallment)), 2)
+      CONCAT('£', ROUND(((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") - (((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") / PAYMENT.pay_totalInstallments) * PAYMENT.pay_currentInstallment)), 2))
     FROM package_pricing
     WHERE package_pricing."pp_customerNumber" = BOOKING.cust_id
   ) AS "Payment Left"
