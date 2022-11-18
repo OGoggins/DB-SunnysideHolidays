@@ -137,6 +137,7 @@ CREATE TABLE FULLTIME (
   emp_id INT NOT NULL UNIQUE,
   ft_bonusScheme TEXT,
   ft_holidayAllowance INT NOT NULL,
+  ft_salary INT NOT NULL,
     FOREIGN KEY (emp_id)
       REFERENCES EMPLOYEE(emp_id)
       ON DELETE CASCADE
@@ -343,7 +344,8 @@ VALUES
 ('Sales_Personal', 'sales.sunnyside.ac.uk','Deals with customers.'),
 ('Quality_Control', 'qc.sunnyside.ac.uk','Deals with complaints from customers.'),
 ('Finance', 'fin.sunnyside.ac.uk','Work with keeping the branch up to date on tax.'),
-('Supervisor', 'supvr.sunnyside.ac.uk','Manages the departments or the whole branch.');
+('Supervisor', 'supvr.sunnyside.ac.uk','Manages the departments or the whole branch.'),
+('General', '.sunnyside.ac.uk','For all non-specialized employees.');
 
 INSERT INTO EMPLOYEE (br_id, dmpt_id, emp_password, emp_fname, emp_lname, emp_dob, emp_addressLine1, emp_city, emp_postcode, emp_phoneNum)
 VALUES
@@ -384,26 +386,26 @@ VALUES
 (3, 6, 'password14', 'Sakura', 'Yamaguchi', '1998-02-14', '18 Bloomfield Mead', 'London', 'NW20 6AG', '+44 7700 138011'), --35
 (3, 6, 'password15', 'Yuki', 'Matsumoto', '1997-03-13', '18 Union Oaks', 'London', 'NW7 6QT', '+44 7151 494259'); --36
 
-INSERT INTO FULLTIME (emp_id, ft_bonusScheme, ft_holidayAllowance)
+INSERT INTO FULLTIME (emp_id, ft_bonusScheme, ft_holidayAllowance, ft_salary)
 VALUES
-(1, null, 14),
-(2, null, 14),
-(3, null, 14),
-(4, null, 14),
-(5, null, 14),
-(6, null, 16),
-(7, null, 14),
-(8, null, 14),
-(9, null, 14),
-(10, null, 14),
-(11, null, 14),
-(12, null, 16),
-(13, null, 14),
-(14, null, 14),
-(15, null, 14),
-(16, null, 14),
-(17, null, 14),
-(18, null, 16);
+(1, null, 14, 50000),
+(2, null, 14, 46000),
+(3, null, 14, 24000),
+(4, null, 14, 60000),
+(5, null, 14, 40000),
+(6, null, 16, 40000),
+(7, null, 14, 44000),
+(8, null, 14, 60000),
+(9, null, 14, 45000),
+(10, null, 14, 34000),
+(11, null, 14, 19000),
+(12, null, 16, 30000),
+(13, null, 14, 45000),
+(14, null, 14, 59000),
+(15, null, 14, 43000),
+(16, null, 14, 24000),
+(17, null, 14, 50000),
+(18, null, 16, 100000);
 
 INSERT INTO PARTTIME (emp_id, pt_weeklyHours, pt_hourlyRate)
 VALUES
