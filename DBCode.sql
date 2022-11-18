@@ -81,8 +81,8 @@ CREATE TABLE PAYMENT (
   pay_id SERIAL PRIMARY KEY,
   cust_id INT NOT NULL UNIQUE,
   pay_status BOOL NOT NULL,
-  pay_totalInstallments INT NOT NULL,
-  pay_currentInstallment INT NOT NULL,
+  pay_totalInstalments INT NOT NULL,
+  pay_currentInstalment INT NOT NULL,
     FOREIGN KEY (cust_id)
       REFERENCES CUSTOMER(cust_id)
       ON DELETE CASCADE
@@ -169,7 +169,7 @@ CREATE TABLE MARKETING (
       ON DELETE CASCADE
 );
 
-CREATE TABLE SALES_PERSONAL (
+CREATE TABLE SALES_PERSONNEL (
   emp_id INT NOT NULL UNIQUE,
   sales_area VARCHAR(20) NOT NULL,
   sales_total INT NOT NULL,
@@ -270,7 +270,7 @@ VALUES
 ('Timmy', 'Dock', '1985-07-20', '13 Castle Road', 'Oxford', 'OX33 1SP', '+44 7272 072348' , 'timmydock@gmail.com'),
 ('Loudred', 'Smock', '1984-06-25', '19 Lapton Road', 'Oxford', 'OX10 1EA', '+44 7235 072348' , 'lourdredsmock@gmail.com');
 
-INSERT INTO PAYMENT (cust_id, pay_status, pay_totalInstallments, pay_currentInstallment)
+INSERT INTO PAYMENT (cust_id, pay_status, pay_totalInstalments, pay_currentInstalment)
 VALUES
 (1, 'true', 1, 1),
 (2, 'false', 2, 1),
@@ -338,13 +338,12 @@ VALUES
 
 INSERT INTO DEPARTMENT (dmpt_name, dmpt_emailSUffix, dmpt_desc)
 VALUES
-('Human_Resources', 'hr.sunnyside.ac.uk', 'Deals with issues between employees.'), 
-('Marketing', 'mk.sunnyside.ac.uk', 'Work to advertise the company.'), 
-('Sales_Personal', 'sales.sunnyside.ac.uk', 'Deals with customers.'),
-('Quality_Control', 'qc.sunnyside.ac.uk', 'Deals with complaints from customers.'),
-('Finance', 'fin.sunnyside.ac.uk', 'Work with keeping the branch up to date on tax.'),
-('Supervisor', 'supvr.sunnyside.ac.uk', 'Manages the departments or the whole branch.'),
-('General', 'sunnyside.ac.uk', 'For employees that dont have a department.');
+('Human_Resources', 'hr.sunnyside.ac.uk','Deals with issues between employees.'), 
+('Marketing', 'mk.sunnyside.ac.uk','Work to advertise the company.'), 
+('Sales_Personal', 'sales.sunnyside.ac.uk','Deals with customers.'),
+('Quality_Control', 'qc.sunnyside.ac.uk','Deals with complaints from customers.'),
+('Finance', 'fin.sunnyside.ac.uk','Work with keeping the branch up to date on tax.'),
+('Supervisor', 'supvr.sunnyside.ac.uk','Manages the departments or the whole branch.');
 
 INSERT INTO EMPLOYEE (br_id, dmpt_id, emp_password, emp_fname, emp_lname, emp_dob, emp_addressLine1, emp_city, emp_postcode, emp_phoneNum)
 VALUES
@@ -424,7 +423,7 @@ VALUES
 (8, 'design', 'external'),
 (14, 'content', 'internal');
 
-INSERT INTO SALES_PERSONAL (emp_id, sales_area, sales_total) 
+INSERT INTO SALES_PERSONNEL (emp_id, sales_area, sales_total) 
 VALUES
 (3, 'packages', 10),
 (9, 'packages', 21),
@@ -502,7 +501,7 @@ SELECT
   PACKAGE.pk_discount AS "pp_packageDiscount",
   ROUND((PACKAGE.pk_pricePP - (PACKAGE.pk_pricePP * (PACKAGE.pk_discount / 100))), 2) AS "pp_finalPricePerPerson"
 FROM BOOKING
-JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id;
+INNER JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id;
 
 
 
@@ -553,7 +552,7 @@ SELECT
   WHERE HOTEL.ht_id = PACKAGE.ht_id
   ) AS "Hotel"
 FROM BOOKING
-JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id
+INNER JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id
 WHERE BOOKING.bk_id = 3;
 
 -- Package payment status
@@ -569,20 +568,20 @@ SELECT
   ) AS "Total Cost",
   (
     SELECT
-      CONCAT('£', ROUND((((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") / PAYMENT.pay_totalInstallments) * PAYMENT.pay_currentInstallment), 2))
+      CONCAT('£', ROUND((((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") / PAYMENT.pay_totalInstalments) * PAYMENT.pay_currentInstalment), 2))
     FROM package_pricing
     WHERE package_pricing."pp_customerNumber" = BOOKING.cust_id
   ) AS "Payment Made",
   (
     SELECT
-      CONCAT('£', ROUND(((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") - (((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") / PAYMENT.pay_totalInstallments) * PAYMENT.pay_currentInstallment)), 2))
+      CONCAT('£', ROUND(((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") - (((package_pricing."pp_totalTourists" * package_pricing."pp_finalPricePerPerson") / PAYMENT.pay_totalInstalments) * PAYMENT.pay_currentInstalment)), 2))
     FROM package_pricing
     WHERE package_pricing."pp_customerNumber" = BOOKING.cust_id
   ) AS "Payment Left"
 FROM BOOKING
-JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id
-JOIN CUSTOMER ON CUSTOMER.cust_id = BOOKING.cust_id
-JOIN PAYMENT ON PAYMENT.cust_id = CUSTOMER.cust_id
+INNER JOIN PACKAGE ON BOOKING.pk_id = PACKAGE.pk_id
+INNER JOIN CUSTOMER ON CUSTOMER.cust_id = BOOKING.cust_id
+INNER JOIN PAYMENT ON PAYMENT.cust_id = CUSTOMER.cust_id
 WHERE PAYMENT.pay_status = 'false';
 
 -- Other one (idk)
