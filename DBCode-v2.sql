@@ -158,13 +158,6 @@ CREATE TABLE TRAVELLERS (
       ON DELETE CASCADE
 );
 
-CREATE TABLE ROLE (
-  role_id SERIAL PRIMARY KEY,
-  role_name VARCHAR(50) NOT NULL UNIQUE,
-  role_annualSalary DECIMAL(6, 2) NOT NULL,
-  role_desc TEXT
-);
-
 CREATE TABLE DEPARTMENT (
   dmpt_id SERIAL PRIMARY KEY,
   dmpt_name VARCHAR(25) NOT NULL UNIQUE,
@@ -172,12 +165,22 @@ CREATE TABLE DEPARTMENT (
   dmpt_desc TEXT
 );
 
+CREATE TABLE ROLE (
+  role_id SERIAL PRIMARY KEY,
+  dmpt_id INT NOT NULL,
+  role_name VARCHAR(50) NOT NULL UNIQUE,
+  role_annualSalary DECIMAL(8, 2) NOT NULL,
+  role_desc TEXT,
+    FOREIGN KEY (dmpt_id)
+        REFERENCES DEPARTMENT(dmpt_id)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE EMPLOYEE (
   emp_id SERIAL PRIMARY KEY,
   address_id INT NOT NULL,
   branch_id INT NOT NULL,
   role_id INT NOT NULL,
-  dmpt_id INT NOT NULL,
   emp_password VARCHAR(100) NOT NULL,
   emp_fname VARCHAR(50) NOT NULL,
   emp_lname VARCHAR(50) NOT NULL,
@@ -192,26 +195,18 @@ CREATE TABLE EMPLOYEE (
     FOREIGN KEY (role_id)
       REFERENCES ROLE(role_id)
       ON DELETE CASCADE,
-    FOREIGN KEY (dmpt_id)
-      REFERENCES DEPARTMENT(dmpt_id)
-      ON DELETE CASCADE
 );
 
-CREATE TABLE MANAGERS (
+CREATE TABLE BRANCH_MANAGER (
   emp_id INT NOT NULL UNIQUE,
-  mgr_dmpt_id INT,
   mgr_branch_id INT,
     FOREIGN KEY (emp_id)
       REFERENCES EMPLOYEE(emp_id)
-      ON DELETE CASCADE,
-    FOREIGN KEY (mgr_dmpt_id)
-      REFERENCES DEPARTMENT(dmpt_id)
       ON DELETE CASCADE,
     FOREIGN KEY (mgr_branch_id)
       REFERENCES BRANCH(branch_id)
       ON DELETE CASCADE
 );
-
 
 
 /*--------------------------*/
@@ -412,16 +407,57 @@ VALUES
 
 INSERT INTO DEPARTMENT (dmpt_name, dmpt_emailSuffix, dmpt_desc)
 VALUES
-();
+('Administration', 'admin.sunnyside.ac.uk', 'Includes management and admin'),
+('Research & Development', 'rd.sunnyside.ac.uk', 'Research to gather knowlegde to create new successful packages or improve exsisting packages'),
+('Marketing & Sales', 'ms.sunnyside.ac.uk', 'Responsible for promoting and creating holiday package sales'),
+('Human Resources', 'hr.sunnyside.ac.uk', 'Responsible for all things worker-related'),
+('Customer Service', 'cs.sunnyside.ac.uk', 'Provide direct help, advice and service directly with customers'),
+('Accounting & Finance', 'af.sunnyside.ac.uk', 'Tracks revenues and expenses');
 
-INSERT INTO ROLE (role_name, role_annualSalary, role_desc)
+INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc)
 VALUES
-();
+('Branch Manager', 1, 120000.00, null),
+('Administration Manager', 1, 90000.00, null),
+('Senior Administration Manager', 1, 80000.00, null),
+('Admin', 1, 70000.00, null),
+
+('R&D Manager', 2, 60000.00, null),
+('R&D Project Manager', 2, 55000.00, null),
+('Senior R&D Project Manager', 2, 50000.00, null),
+('R&D Project Coordinator', 2, 45000.00, null),
+('R&D', 2, 40000.00, null),
+
+('Marketing & Sales Manager', 3, 60000.00, null),
+('Senior Marketing Manager', 3, 55000.00, null),
+('Senior Sales Manager', 3, 55000.00, null),
+('Marketing Project Manager', 3, 50000.00, null),
+('Marketing Project Coordinator', 3, 45000.00, null),
+('Sales Project Manager', 3, 50000.00, null),
+('Sales Project Corrdinator', 3, 45000.00, null),
+('Marketing', 3, 40000.00, null),
+('Sales', 3, 40000.00, null),
+
+('HR Manager' 4, 60000.00, null),
+('Senior HR Manager' 4, 55000.00, null),
+('HR' 4, 40000.00, null),
+
+('Customer Service Manager', 5, 60000.00, null),
+('Senior Customer Serive Manager', 5, 55000.00, null),
+('Customer Experience', 5, 40000.00, null),
+('Customer Advocate', 5, 40000.00, null),
+
+('Accoutanting & Finace Manager', 6, 60000.00, null),
+('Senior Accoutanting & Finace Manager', 6, 55000.00, null),
+('General Accoutant', 6, 50000.00, null),
+('Tax Accoutant', 6, 50000.00, null),
+('Forensic Accoutant', 6, 50000.00, null),
+('Bookkeeping', 6, 50000.00, null);
+
 
 INSERT INTO EMPLOYEE (address_id, branch_id, role_id, dmpt_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum)
 VALUES
 ();
 
-INSERT INTO MANAGERS (emp_id, mgr_dmpt_id, mgr_branch_id)
+INSERT INTO BRANCH_MANAGER (emp_id, mgr_dmpt_id, mgr_branch_id)
 VALUES
 ();
