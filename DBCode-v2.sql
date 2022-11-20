@@ -203,7 +203,6 @@ CREATE TABLE EMPLOYEE (
 
 INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode)
 VALUES
--- customer addresses
 ('11 Stoneleigh Place', 'Suite 127', 'Oxford', 'OX10 6PT'), --1
 ('12 Buckfast Street', null, 'Oxford', 'OX45 3AF'), --2
 ('13 Abbots Place', null, 'London', 'NW5 9HX'), --3
@@ -214,17 +213,14 @@ VALUES
 ('18 Benhill Road', null, 'Oxford', 'OX3 1NA'), --8
 ('13 Castle Road', 'Suite 12', 'Oxford', 'OX33 1SP'), --9
 ('19 Lapton Road', null, 'Oxford', 'OX10 1EA'), --10
--- hotel addresses
 ('12 Belgrave Road', null, 'Portsmouth', 'PO38 1JJ'), --11
 ('13 Shirrell Heath', null, 'Southampton', 'SO32 2JY'), --12
 ('13 Umm Suqeim 3', null, 'Dubai', '21936'), --13
 ('14 Crescent Rd - The Palm Jumeirah', null, 'Dubai', '29406'), --14
 ('15 C. de Velázquez', null, 'Madrid', '28001'), --15
--- branch addresses
 ('63 Springfield Road', null, 'Cambridge', 'CB60 5DF'), --16
 ('46 School Lane', null, 'Sunderland', 'SR32 8FV'), --17
 ('62 The Grove', null, 'Liverpool', 'LP68 3DY'), --18
-
 ('1 Stanhope Cottages', null, 'Porstmouth', 'PO10 6XQ'), --19
 ('2 Heywood Moorings', null, 'Porstmouth', 'PO24 4LA'), --20
 ('3 Ruskin Circus', null, 'Porstmouth', 'PO4 2SG'), --21
@@ -254,7 +250,6 @@ VALUES
 ('19 Green Avenue', null, 'Portsmouth', 'PO15 9OF'), --45
 ('19 Congress Way', null, 'Portsmouth', 'PO16 1PG'), --46
 ('19 Elmwood Row', null, 'Portsmouth', 'PO17 2QH'), --47
-
 ('7 Laburnum Covert', null, 'Oxford', 'OX16 6SN'), --48
 ('8 Northanger Drive', null, 'Oxford', 'OX67 8RW'), --49
 ('9 Raleigh Avenue', null, 'Oxford', 'OX2N 6AS'), --50
@@ -284,7 +279,6 @@ VALUES
 ('19 Noble Boulevard', null, 'Oxford', 'OX5 9OF'), --74
 ('19 Bay Lane', null, 'Oxford', 'OX6 1PG'), --75
 ('19 Congress Boulevard', null, 'Oxford', 'OX7 2QH'), --76
-
 ('13 Leven Fairway', null, 'London', 'NW14 8QH'), --77
 ('14 Madeira Circus', null, 'London', 'NW7 6PH'), --78
 ('15 Kensington Circle', null, 'London', 'NW2 4EN'), --79
@@ -366,7 +360,6 @@ VALUES
 ('Outdoor Pool', null), -- 7
 ('Laundry Service', 'Washing machines and tumble dryers, must provide own cleaning products'), -- 8
 ('Air Conditioned', 'Rooms contain built-in air conditioning'), -- 9
-
 ('Single Bed', null), -- 10
 ('King-sized Bed', null), -- 11
 ('King-sized + Single Bed', null), -- 12
@@ -498,13 +491,11 @@ VALUES
 ('Administration Manager', 1, 90000.00, 'manager of all administration'), --2
 ('Senior Administration Manager', 1, 80000.00, 'senior manager of all administration'), --3
 ('Admin', 1, 70000.00, null), --4
-
 ('R&D Manager', 2, 60000.00, 'manager of all R&D'), --5
 ('R&D Project Manager', 2, 55000.00, 'manager of a current R&D project'), --6
 ('Senior R&D Project Manager', 2, 50000.00, 'senior manager of a current R&D project'), --7
 ('R&D Project Coordinator', 2, 45000.00, 'Coordinates current R&D project'), --8
 ('R&D', 2, 40000.00, null), --8
-
 ('Marketing & Sales Manager', 3, 60000.00, 'manager of all marketing and sales'), --9
 ('Senior Marketing Manager', 3, 55000.00, 'senior manager of all marketing'), --10
 ('Senior Sales Manager', 3, 55000.00, 'senior manager of all sales'), --11
@@ -514,16 +505,13 @@ VALUES
 ('Sales Project Corrdinator', 3, 45000.00, 'Coordinates current sales project'), --15
 ('Marketing', 3, 40000.00, null), --15
 ('Sales', 3, 40000.00, null), --16
-
 ('HR Manager' 4, 60000.00, 'manager of all human resources'), --17
 ('Senior HR Manager' 4, 55000.00, 'senior manager of all human resources'), --18
 ('HR' 4, 40000.00, null), --19
-
 ('Customer Service Manager', 5, 60000.00, 'manager of all customer service'), --20
 ('Senior Customer Serive Manager', 5, 55000.00, 'senior manager of all customer service'), --21
 ('Customer Experience', 5, 40000.00, 'looks and reviews previous customers experience'), --22
 ('Customer Advocate', 5, 40000.00, 'ensures customers opinions are properly reviewed and considered'), --23
-
 ('Accoutanting & Finace Manager', 6, 60000.00, 'manager of all Accountanting & Finance'), --24
 ('Senior Accoutanting & Finace Manager', 6, 55000.00, 'senior manager of all Accountanting & Finance'), --25
 ('General Accoutant', 6, 50000.00, null), --26
