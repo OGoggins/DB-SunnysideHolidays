@@ -23,22 +23,6 @@ CREATE TABLE CUSTOMER (
       ON DELETE CASCADE
 );
 
-CREATE TABLE PAYMENT (
-  payment_id SERIAL PRIMARY KEY,
-  cust_id INT NOT NULL,
-  payment_status BOOLEAN NOT NULL,
-    FOREIGN KEY (cust_id)
-      REFERENCES CUSTOMER(cust_id)
-      ON DELETE CASCADE
-);
-
-CREATE TABLE INSTALMENTS (
-  instalments_id SERIAL PRIMARY KEY,
-  payment_id INT NOT NULL,
-  instalments_number INT NOT NULL,
-  instalments_amountPaid DECIMAL(6, 2)
-);
-
 CREATE TABLE HOTEL (
   hotel_id SERIAL PRIMARY KEY,
   address_id INT NOT NULL,
@@ -147,6 +131,22 @@ CREATE TABLE BOOKING (
       ON DELETE CASCADE
 );
 
+CREATE TABLE PAYMENT (
+  payment_id SERIAL PRIMARY KEY,
+  booking_id INT NOT NULL,
+  payment_status BOOLEAN NOT NULL,
+    FOREIGN KEY (booking_id)
+      REFERENCES BOOKING(booking_id)
+      ON DELETE CASCADE
+);
+
+CREATE TABLE INSTALMENTS (
+  instalments_id SERIAL PRIMARY KEY,
+  payment_id INT NOT NULL,
+  instalments_number INT NOT NULL,
+  instalments_amountPaid DECIMAL(6, 2)
+);
+
 CREATE TABLE TRAVELLERS (
   traveller_id SERIAL PRIMARY KEY,
   booking_id INT NOT NULL,
@@ -194,7 +194,7 @@ CREATE TABLE EMPLOYEE (
       ON DELETE CASCADE,
     FOREIGN KEY (role_id)
       REFERENCES ROLE(role_id)
-      ON DELETE CASCADE,
+      ON DELETE CASCADE
 );
 
 /*--------------------------*/
@@ -290,7 +290,7 @@ VALUES
 ('18 Bloomfield Mead', null, 'London', 'NW20 6AG'), --85
 ('18 Beresford Court', null, 'London', 'NW3 2DF'), --86
 ('18 Watling Buildings', null, 'London', 'NW3 9TX'), --87
-('18 Douglas Path', null, 'London', 'NW5 5BU'); --88
+('18 Douglas Path', null, 'London', 'NW5 5BU'), --88
 ('19 Snowflake Boulevard', null, 'London', 'NW7 2QH'), --89
 ('19 Arctic Avenue', null, 'London', 'NW6 1PG'), --90
 ('19 Hazelnut Street', null, 'London', 'NW5 9OF'), --91
@@ -449,7 +449,7 @@ VALUES
 (9, 'Timmy', 'Dock', '1985-07-20'),
 (10, 'Loudred', 'Smock', '1984-06-25');
 
-INSERT INTO PAYMENT (cust_id, payment_status) 
+INSERT INTO PAYMENT (booking_id, payment_status) 
 VALUES
 (1, 'true'),
 (2, 'true'),
@@ -505,9 +505,9 @@ VALUES
 ('Sales Project Corrdinator', 3, 45000.00, 'Coordinates current sales project'), --15
 ('Marketing', 3, 40000.00, null), --15
 ('Sales', 3, 40000.00, null), --16
-('HR Manager' 4, 60000.00, 'manager of all human resources'), --17
-('Senior HR Manager' 4, 55000.00, 'senior manager of all human resources'), --18
-('HR' 4, 40000.00, null), --19
+('HR Manager', 4, 60000.00, 'manager of all human resources'), --17
+('Senior HR Manager', 4, 55000.00, 'senior manager of all human resources'), --18
+('HR', 4, 40000.00, null), --19
 ('Customer Service Manager', 5, 60000.00, 'manager of all customer service'), --20
 ('Senior Customer Serive Manager', 5, 55000.00, 'senior manager of all customer service'), --21
 ('Customer Experience', 5, 40000.00, 'looks and reviews previous customers experience'), --22
@@ -608,4 +608,4 @@ VALUES
 (102, 3, 26, 'password84', 'Dolly', 'Long', '1977-04-13', '+44 7700 035056'), --84
 (103, 3, 27, 'password85', 'Molly', 'Lee', '1976-03-12', '+44 7911 257623'), --85
 (104, 3, 28, 'password86', 'Johnny', 'Yip', '1975-02-11', '+44 7448 610099'), --86
-(105, 3, 29, 'password87', 'Jimmy', 'Yany', '1974-01-10', '+44 7184 978346'), --87
+(105, 3, 29, 'password87', 'Jimmy', 'Yany', '1974-01-10', '+44 7184 978346'); --87
