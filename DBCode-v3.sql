@@ -685,3 +685,53 @@ VALUES
 (9, 1, 1000),
 (10, 1, 100); -- total:£500 | paid:£100 | remaining:£400
 
+
+
+/*--------------------------*/
+/*----------Views----------*/
+/*--------------------------*/
+
+
+/*--------------------------*/
+/*---------Queries---------*/
+/*--------------------------*/
+
+-- Best Performing Package
+SELECT
+  b.package_id AS "Package Number",
+  COUNT(b.package_id) AS "Most Popular Package"
+FROM BOOKING b
+GROUP BY b.package_id
+ORDER BY "Most Popular Package" DESC
+LIMIT 1;
+--  Planning Time: 0.090 ms
+--  Execution Time: 0.067 ms
+-- changed line 434 from ((7, 2),) to (7, 3), ---- if issues happen change back but this was done so that there is a best performing package since they where all 2;
+
+-- Details about a specific booking
+SELECT
+  (
+    SELECT 
+      CONCAT(c.cust_email, ' | ', c.cust_phoneNum) 
+    FROM CUSTOMER c
+    WHERE c.cust_id = b.cust_id) AS "Customer Contacts",
+  b.package_id AS "Package Number",
+  CONCAT(p.package_start, ' - ', p.package_end) AS "Package Time Frame",
+  (
+    SELECT
+      CONCAT(f.flight_date, ' at ', f.flight_boarding, ' - ', f.flight_locationStart, ' to ', f.flight_locationEnd)
+    FROM FLIGHT f
+    WHERE f.flight_id = p.flight_id
+  ) AS "Flight Information",
+  (
+  SELECT 
+    h.hotel_name 
+  FROM HOTEL h
+  WHERE h.hotel_id = p.hotel_id
+  ) AS "Hotel"
+FROM BOOKING b
+INNER JOIN PACKAGE p ON b.package_id = p.package_id
+WHERE b.booking_id = 3;
+--  Planning Time: 0.284 ms
+--  Execution Time: 0.115 ms
+
