@@ -566,11 +566,11 @@ VALUES
 ('Senior Customer Serive Manager', 5, 55000.00, 'senior manager of all customer service'), --21
 ('Customer Experience', 5, 40000.00, 'looks and reviews previous customers experience'), --22
 ('Customer Advocate', 5, 40000.00, 'ensures customers opinions are properly reviewed and considered'), --23
-('Accoutanting & Finace Manager', 6, 60000.00, 'manager of all Accountanting & Finance'), --24
-('Senior Accoutanting & Finace Manager', 6, 55000.00, 'senior manager of all Accountanting & Finance'), --25
-('General Accoutant', 6, 50000.00, null), --26
-('Tax Accoutant', 6, 50000.00, null), --27
-('Forensic Accoutant', 6, 50000.00, null), --28
+('Accounting & Finance Manager', 6, 60000.00, 'manager of all Accountanting & Finance'), --24
+('Senior Accounting & Finance Manager', 6, 55000.00, 'senior manager of all Accountanting & Finance'), --25
+('General Accountant', 6, 50000.00, null), --26
+('Tax Accountant', 6, 50000.00, null), --27
+('Forensic Accountant', 6, 50000.00, null), --28
 ('Bookkeeping', 6, 50000.00, null); --29
 
 
@@ -709,12 +709,11 @@ VALUES
 
 
 /*--------------------------*/
-/*----------Views----------*/
+/*----------Views-----------*/
 /*--------------------------*/
 
-
 /*--------------------------*/
-/*---------Queries---------*/
+/*---------Queries----------*/
 /*--------------------------*/
 
 -- Best Performing Package
@@ -756,3 +755,20 @@ WHERE b.booking_id = 3;
 --  Planning Time: 0.284 ms
 --  Execution Time: 0.115 ms
 
+-- Employee Database Index
+
+SELECT  
+  br.branch_name                                 AS "Branch",
+  dmpt.dmpt_name                                 AS "Department",
+  CONCAT(emp.emp_fname, ' ', emp.emp_lname)      AS "Employee",
+  r.role_name                                    AS "Role",
+  CONCAT(emp.emp_id, '@', dmpt.dmpt_emailSuffix) AS "Email Address",
+  emp.emp_phoneNum                               AS "Phone Number"
+FROM BRANCH br
+INNER JOIN EMPLOYEE emp ON emp.branch_id=br.branch_id
+INNER JOIN ROLE r ON emp.role_id=r.role_id
+INNER JOIN DEPARTMENT dmpt ON r.dmpt_id=dmpt.dmpt_id
+ORDER BY br.branch_name, dmpt.dmpt_name, emp.emp_lname ASC;
+
+-- Planning Time: 0.326ms
+-- Execution Time: 0.333 ms
