@@ -772,3 +772,37 @@ ORDER BY br.branch_name, dmpt.dmpt_name, emp.emp_lname ASC;
 
 -- Planning Time: 0.326ms
 -- Execution Time: 0.333 ms
+
+
+-- Package payment status
+SELECT
+  CONCAT(cust.cust_email, ' | ', cust.cust_phoneNum) AS "Customer Contacts",
+  b.booking_id AS "Booking ID",
+  p.payment_id AS "Payment ID",
+  (
+    SELECT 
+      COUNT(*) 
+    FROM TRAVELLERS t 
+    WHERE t.booking_id = b.booking_id
+  ) AS "Number of Travellers",
+  CONCAT('£', p.payment_totalPrice) AS "Total Price",
+  CONCAT('£', p.payment_amountPaid) AS "Amount Paid",
+  CASE
+    WHEN p.payment_totalPrice - p.payment_amountPaid < 0 THEN 'N/A'
+    ELSE CONCAT('£', p.payment_totalPrice - p.payment_amountPaid)
+  END AS "Remaining",
+  ARRAY_TO_STRING(
+    ARRAY_AGG(
+      CONCAT('Instalment-', i.instalments_number, ': ', '£', i.instalments_amountPaid)
+    ), ', '
+  ) AS "Payment History"
+FROM BOOKING b
+INNER JOIN CUSTOMER cust USING (cust_id)
+INNER JOIN PAYMENT p USING (booking_id)
+INNER JOIN INSTALMENTS i USING (payment_id)
+WHERE cust.cust_id = 3 -- change to email then index through email
+GROUP BY 
+  cust.cust_email, 
+  cust.cust_phoneNum,
+  b.booking_id,
+  p.payment_id;
