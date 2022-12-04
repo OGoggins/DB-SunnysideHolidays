@@ -664,9 +664,6 @@ VALUES
 (104, 3, 28, 'password86', 'Johnny', 'Yip', '1975-02-11', '+44 7448 610099'), --86
 (105, 3, 29, 'password87', 'Jimmy', 'Yany', '1974-01-10', '+44 7184 978346'); --87
 
-
-
-
 INSERT INTO BOOKING (cust_id, package_id)
 VALUES
 (1, 1),
@@ -709,8 +706,17 @@ VALUES
 
 
 /*--------------------------*/
+/*---------INDEXES----------*/
+/*--------------------------*/
+CREATE INDEX cust_email_idx ON CUSTOMER(cust_email);
+
+
+
+/*--------------------------*/
 /*----------Views-----------*/
 /*--------------------------*/
+
+
 
 /*--------------------------*/
 /*---------Queries----------*/
@@ -800,9 +806,28 @@ FROM BOOKING b
 INNER JOIN CUSTOMER cust USING (cust_id)
 INNER JOIN PAYMENT p USING (booking_id)
 INNER JOIN INSTALMENTS i USING (payment_id)
-WHERE cust.cust_id = 3 -- change to email then index through email
+WHERE cust.cust_email = 'johnnybob@gmail.com'
 GROUP BY 
   cust.cust_email, 
   cust.cust_phoneNum,
   b.booking_id,
   p.payment_id;
+
+
+-- Details about a specific package
+SELECT
+  p.package_id AS "Package ID",
+  CONCAT(p.package_start, ' - ', p.package_end) AS "Package Duration",
+  CASE
+    WHEN p.package_carRented THEN 'Yes'
+    ELSE 'No'
+  END AS "With Car",
+  CONCAT('£', ROUND(p.package_pricePP * (1 - (p.package_discount / 100)), 2)) AS "Current Price Per Person",
+  CONCAT(h.hotel_name, ' - ', a.address_city, ' - ', a.address_postcode) AS "Hotel",
+  CONCAT(f.flight_locationStart, ' - ', f.flight_locationEnd) AS "Flight",
+  CONCAT(f.flight_date, ' - ', f.flight_boarding) AS "Flight Time"
+FROM PACKAGE p
+INNER JOIN HOTEL h USING (hotel_id)
+INNER JOIN FLIGHT f USING (flight_id)
+INNER JOIN ADDRESS a USING (address_id)
+WHERE p.package_id = 5;
