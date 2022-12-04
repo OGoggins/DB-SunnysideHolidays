@@ -709,7 +709,7 @@ VALUES
 /*---------INDEXES----------*/
 /*--------------------------*/
 CREATE INDEX cust_email_idx ON CUSTOMER(cust_email);
-
+CREATE INDEX branch_name_idx ON BRANCH(branch_name);
 
 
 /*--------------------------*/
@@ -730,9 +730,6 @@ FROM BOOKING b
 GROUP BY b.package_id
 ORDER BY "Most Popular Package" DESC
 LIMIT 1;
---  Planning Time: 0.090 ms
---  Execution Time: 0.067 ms
--- changed line 434 from ((7, 2),) to (7, 3), ---- if issues happen change back but this was done so that there is a best performing package since they where all 2;
 
 -- Details about a specific booking
 SELECT
@@ -758,27 +755,24 @@ SELECT
 FROM BOOKING b
 INNER JOIN PACKAGE p ON b.package_id = p.package_id
 WHERE b.booking_id = 3;
---  Planning Time: 0.284 ms
---  Execution Time: 0.115 ms
 
 -- Employee Database Index
-
-SELECT  
-  br.branch_name                                 AS "Branch",
-  dmpt.dmpt_name                                 AS "Department",
-  CONCAT(emp.emp_fname, ' ', emp.emp_lname)      AS "Employee",
-  r.role_name                                    AS "Role",
-  CONCAT(emp.emp_id, '@', dmpt.dmpt_emailSuffix) AS "Email Address",
-  emp.emp_phoneNum                               AS "Phone Number"
-FROM BRANCH br
-INNER JOIN EMPLOYEE emp ON emp.branch_id=br.branch_id
-INNER JOIN ROLE r ON emp.role_id=r.role_id
-INNER JOIN DEPARTMENT dmpt ON r.dmpt_id=dmpt.dmpt_id
-ORDER BY br.branch_name, dmpt.dmpt_name, emp.emp_lname ASC;
-
--- Planning Time: 0.326ms
--- Execution Time: 0.333 ms
-
+SELECT
+  d.dmpt_name AS "Department",
+  CONCAT(e.emp_fname, ' ', e.emp_lname) AS "Employee",
+  r.role_name AS "Role",
+  CONCAT(e.emp_id, '@', d.dmpt_emailSuffix) AS "Email Address",
+  e.emp_phoneNum AS "Phone"
+FROM EMPLOYEE e
+INNER JOIN ROLE r USING (role_id)
+INNER JOIN DEPARTMENT d USING (dmpt_id)
+WHERE e.branch_id = (
+  SELECT 
+    b.branch_id 
+  FROM BRANCH b 
+  WHERE b.branch_name = 'Sunnyside Cambridge'
+)
+ORDER BY d.dmpt_name, e.emp_lname ASC;
 
 -- Package payment status
 SELECT
