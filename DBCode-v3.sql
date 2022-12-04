@@ -806,7 +806,7 @@ FROM BOOKING b
 INNER JOIN CUSTOMER cust USING (cust_id)
 INNER JOIN PAYMENT p USING (booking_id)
 INNER JOIN INSTALMENTS i USING (payment_id)
-WHERE cust.cust_email = 'johnnybob@gmail.com'
+WHERE cust.cust_email = 'robertmicheals@gmail.com'
 GROUP BY 
   cust.cust_email, 
   cust.cust_phoneNum,
@@ -824,8 +824,8 @@ SELECT
   END AS "With Car",
   CONCAT('£', ROUND(p.package_pricePP * (1 - (p.package_discount / 100)), 2)) AS "Current Price Per Person",
   CONCAT(h.hotel_name, ' - ', a.address_city, ' - ', a.address_postcode) AS "Hotel",
-  CONCAT(f.flight_locationStart, ' - ', f.flight_locationEnd) AS "Flight",
-  CONCAT(f.flight_date, ' - ', f.flight_boarding) AS "Flight Time"
+  CONCAT(f.flight_locationStart, ' to ', f.flight_locationEnd) AS "Flight",
+  CONCAT(f.flight_date, ' at ', f.flight_boarding) AS "Flight Time"
 FROM PACKAGE p
 INNER JOIN HOTEL h USING (hotel_id)
 INNER JOIN FLIGHT f USING (flight_id)
