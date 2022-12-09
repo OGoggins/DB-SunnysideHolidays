@@ -687,16 +687,110 @@ INSERT INTO INSTALMENTS (payment_id, instalments_number, instalments_amountPaid)
 INSERT INTO INSTALMENTS (payment_id, instalments_number, instalments_amountPaid) VALUES (10, 1, 100);
 
 /*--------------------------*/
-/*----------Views-----------*/
+/*----------VIEWS-----------*/
 /*--------------------------*/
 
+-- View for Query 1
+CREATE VIEW best_package AS
+SELECT  b.package_id        AS "Package Number",
+        COUNT(b.package_id) AS "Most Popular Package"
+FROM BOOKING b
+GROUP BY  b.package_id
+ORDER BY "Most Popular Package" DESC
+LIMIT 1;
 
+-- View for Query 2
+CREATE VIEW booking_details AS
+SELECT  (
+          SELECT  CONCAT(c.cust_email,' | ',c.cust_phoneNum)
+          FROM CUSTOMER c
+          WHERE c.cust_id = b.cust_id
+        )                                             AS "Customer Contacts", 
+        b.package_id                                  AS "Package Number", 
+        CONCAT(p.package_start, ' - ', p.package_end) AS "Package Time Frame", 
+        (
+          SELECT  CONCAT(f.flight_date,' at ',f.flight_boarding,' - ',f.flight_locationStart,' to ',f.flight_locationEnd)
+          FROM FLIGHT f
+          WHERE f.flight_id = p.flight_id 
+        )                                             AS "Flight Information", 
+        (
+          SELECT  h.hotel_name
+          FROM HOTEL h
+          WHERE h.hotel_id = p.hotel_id 
+        )                                             AS "Hotel"
+FROM BOOKING b
+INNER JOIN PACKAGE p ON b.package_id = p.package_id
+WHERE b.booking_id = 3; 
+
+-- View for Query 3
+CREATE VIEW cbg_employee_info AS
+SELECT  d.dmpt_name                             AS "Department",
+        CONCAT(e.emp_fname,' ',e.emp_lname)     AS "Employee",
+        r.role_name                             AS "Role",
+        CONCAT(e.emp_id,'@',d.dmpt_emailSuffix) AS "Email Address",
+        e.emp_phoneNum                          AS "Phone"
+FROM EMPLOYEE e
+INNER JOIN ROLE r USING (role_id)
+INNER JOIN DEPARTMENT d USING (dmpt_id)
+WHERE e.branch_id = (
+  SELECT  b.branch_id
+  FROM BRANCH b
+  WHERE b.branch_name = 'Sunnyside Cambridge' 
+)
+ORDER BY d.dmpt_name, e.emp_lname ASC;
+
+-- View for Query 4
+CREATE VIEW package_payment_status AS
+SELECT  CONCAT(cust.cust_email,' | ',cust.cust_phoneNum)                                                                       AS "Customer Contacts",
+        b.booking_id                                                                                                           AS "Booking ID",
+        p.payment_id                                                                                                           AS "Payment ID",
+        (
+          SELECT  COUNT(*)
+          FROM TRAVELLERS t
+          WHERE t.booking_id = b.booking_id 
+        )                                                                                                                      AS "Number of Travellers", 
+        CONCAT('£', p.payment_totalPrice)                                                                                      AS "Total Price",
+        CONCAT('£', p.payment_amountPaid)                                                                                      AS "Amount Paid",
+        CASE 
+          WHEN p.payment_totalPrice - p.payment_amountPaid < 0 THEN 'N/A' 
+          ELSE CONCAT('£', p.payment_totalPrice - p.payment_amountPaid) 
+        END                                                                                                                    AS "Remaining", 
+        ARRAY_TO_STRING( ARRAY_AGG( CONCAT('Instalment-', i.instalments_number, ': ', '£', i.instalments_amountPaid) ), ', ' ) AS "Payment History"
+FROM BOOKING b
+INNER JOIN CUSTOMER cust USING (cust_id)
+INNER JOIN PAYMENT p USING (booking_id)
+INNER JOIN INSTALMENTS i USING (payment_id)
+WHERE cust.cust_email = 'robertmicheals@gmail.com'
+GROUP BY  cust.cust_email,
+          cust.cust_phoneNum,
+          b.booking_id,
+          p.payment_id;
+
+-- View for Query 5
+CREATE VIEW package_details AS
+SELECT  p.package_id                                                              AS "Package ID",
+        CONCAT(p.package_start,' - ',p.package_end)                               AS "Package Duration",
+        CASE 
+          WHEN p.package_carRented THEN 'Yes'  
+          ELSE 'No' 
+        END                                                                       AS "With Car",
+        CONCAT('£',ROUND(p.package_pricePP * (1 - (p.package_discount / 100)),2)) AS "Current Price Per Person",
+        CONCAT(h.hotel_name,' - ',a.address_city,' - ',a.address_postcode)        AS "Hotel",
+        CONCAT(f.flight_locationStart,' to ',f.flight_locationEnd)                AS "Flight",
+        CONCAT(f.flight_date,' at ',f.flight_boarding)                            AS "Flight Time"
+FROM PACKAGE p
+INNER JOIN HOTEL h USING (hotel_id)
+INNER JOIN FLIGHT f USING (flight_id)
+INNER JOIN ADDRESS a USING (address_id)
+WHERE p.package_id = 5;
 
 /*--------------------------*/
-/*---------Queries----------*/
+/*---------QUERIES----------*/
 /*--------------------------*/
 
--- QUERY 1: Best Performing Package
+-- QUERY 1: This shows the best performing package for the entire lifetime of the company. 
+--          This is helpful to sales since they can know what package is the most likely to sell when pitched to a customer.
+
 SELECT
   b.package_id AS "Package Number",
   COUNT(b.package_id) AS "Most Popular Package"
@@ -705,7 +799,9 @@ GROUP BY b.package_id
 ORDER BY "Most Popular Package" DESC
 LIMIT 1;
 
--- QUERY 2: Details about a specific booking
+-- QUERY 2: The query shows key details about a specific booking. For instance package time frame along with flight and hotel information. 
+--          This can be used for when a customer has placed an order on a holiday and needs to be reminded of key details.
+
 SELECT
   (
     SELECT 
@@ -730,7 +826,8 @@ FROM BOOKING b
 INNER JOIN PACKAGE p ON b.package_id = p.package_id
 WHERE b.booking_id = 3;
 
--- QUERY 3: Employee Information for a specific branch
+-- QUERY 3: The query gives all employee information for a specific branch that a manager may need to access to find employee phone numbers or look at gaps in the workforce.
+
 SELECT
   d.dmpt_name AS "Department",
   CONCAT(e.emp_fname, ' ', e.emp_lname) AS "Employee",
@@ -748,7 +845,9 @@ WHERE e.branch_id = (
 )
 ORDER BY d.dmpt_name, e.emp_lname ASC;
 
--- QUERY 4: Package payment status
+-- QUERY 4: Package payment status, 
+--          this query gives a way for the accounting and finance team of the company to monitor customer payments for a specific booking showing total price for that booking, current amount paid, amount remaining and the history of their payments.
+
 SELECT
   CONCAT(cust.cust_email, ' | ', cust.cust_phoneNum) AS "Customer Contacts",
   b.booking_id AS "Booking ID",
@@ -782,7 +881,9 @@ GROUP BY
   p.payment_id;
 
 
--- QUERY 5: Details about a specific package
+-- QUERY 5: For the final query it shows details about a specific package with key details such as cost, destination and time of leaving. 
+--          This can help sales give accurate information to make sure the customer is well informed.
+
 SELECT
   p.package_id AS "Package ID",
   CONCAT(p.package_start, ' - ', p.package_end) AS "Package Duration",
