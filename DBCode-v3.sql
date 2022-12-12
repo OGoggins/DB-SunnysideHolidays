@@ -1,10 +1,22 @@
+createuser -P -s -e dbadmin;
+-- Password: password00
+createdb dbadmin -O "dbadmin";
+psql -h localhost -p 5432 -U dbadmin;
+
+/* Or
+CREATE USER dbadmin WITH SUPERUSER PASSWORD "password00";
+CREATE DATABASE dbadmin OWNER dbadmin;
+*/
+
 DROP DATABASE SUNNYSIDE;
 CREATE DATABASE SUNNYSIDE;
+GRANT ALL PRIVILEGES ON DATABASE sunnyside TO dbadmin; 
 \c sunnyside;
 
 /*--------------------------*/
 /*---------DATABASE---------*/
 /*--------------------------*/
+
 DROP TABLE IF EXISTS INSTALMENTS CASCADE;
 DROP TABLE IF EXISTS PAYMENT CASCADE;
 DROP TABLE IF EXISTS TRAVELLERS CASCADE;
@@ -536,7 +548,7 @@ INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('HR 
 INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('Senior HR Manager', 4, 55000.00, 'senior manager of all human resources');
 INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('HR', 4, 40000.00, null);
 INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('Customer Service Manager', 5, 60000.00, 'manager of all customer service');
-INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('Senior Customer Serive Manager', 5, 55000.00, 'senior manager of all customer service');
+INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('Senior Customer Service Manager', 5, 55000.00, 'senior manager of all customer service');
 INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('Customer Experience', 5, 40000.00, 'looks and reviews previous customers experience');
 INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('Customer Advocate', 5, 40000.00, 'ensures customers opinions are properly reviewed and considered');
 INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('Accounting & Finance Manager', 6, 60000.00, 'manager of all Accountanting & Finance');
@@ -687,104 +699,6 @@ INSERT INTO INSTALMENTS (payment_id, instalments_number, instalments_amountPaid)
 INSERT INTO INSTALMENTS (payment_id, instalments_number, instalments_amountPaid) VALUES (10, 1, 100);
 
 /*--------------------------*/
-/*----------VIEWS-----------*/
-/*--------------------------*/
-
--- View for Query 1
-CREATE VIEW best_package AS
-SELECT  b.package_id        AS "Package Number",
-        COUNT(b.package_id) AS "Most Popular Package"
-FROM BOOKING b
-GROUP BY  b.package_id
-ORDER BY "Most Popular Package" DESC
-LIMIT 1;
-
--- View for Query 2
-CREATE VIEW booking_details AS
-SELECT  (
-          SELECT  CONCAT(c.cust_email,' | ',c.cust_phoneNum)
-          FROM CUSTOMER c
-          WHERE c.cust_id = b.cust_id
-        )                                             AS "Customer Contacts", 
-        b.package_id                                  AS "Package Number", 
-        CONCAT(p.package_start, ' - ', p.package_end) AS "Package Time Frame", 
-        (
-          SELECT  CONCAT(f.flight_date,' at ',f.flight_boarding,' - ',f.flight_locationStart,' to ',f.flight_locationEnd)
-          FROM FLIGHT f
-          WHERE f.flight_id = p.flight_id 
-        )                                             AS "Flight Information", 
-        (
-          SELECT  h.hotel_name
-          FROM HOTEL h
-          WHERE h.hotel_id = p.hotel_id 
-        )                                             AS "Hotel"
-FROM BOOKING b
-INNER JOIN PACKAGE p ON b.package_id = p.package_id
-WHERE b.booking_id = 3; 
-
--- View for Query 3
-CREATE VIEW cbg_employee_info AS
-SELECT  d.dmpt_name                             AS "Department",
-        CONCAT(e.emp_fname,' ',e.emp_lname)     AS "Employee",
-        r.role_name                             AS "Role",
-        CONCAT(e.emp_id,'@',d.dmpt_emailSuffix) AS "Email Address",
-        e.emp_phoneNum                          AS "Phone"
-FROM EMPLOYEE e
-INNER JOIN ROLE r USING (role_id)
-INNER JOIN DEPARTMENT d USING (dmpt_id)
-WHERE e.branch_id = (
-  SELECT  b.branch_id
-  FROM BRANCH b
-  WHERE b.branch_name = 'Sunnyside Cambridge' 
-)
-ORDER BY d.dmpt_name, e.emp_lname ASC;
-
--- View for Query 4
-CREATE VIEW package_payment_status AS
-SELECT  CONCAT(cust.cust_email,' | ',cust.cust_phoneNum)                                                                       AS "Customer Contacts",
-        b.booking_id                                                                                                           AS "Booking ID",
-        p.payment_id                                                                                                           AS "Payment ID",
-        (
-          SELECT  COUNT(*)
-          FROM TRAVELLERS t
-          WHERE t.booking_id = b.booking_id 
-        )                                                                                                                      AS "Number of Travellers", 
-        CONCAT('£', p.payment_totalPrice)                                                                                      AS "Total Price",
-        CONCAT('£', p.payment_amountPaid)                                                                                      AS "Amount Paid",
-        CASE 
-          WHEN p.payment_totalPrice - p.payment_amountPaid < 0 THEN 'N/A' 
-          ELSE CONCAT('£', p.payment_totalPrice - p.payment_amountPaid) 
-        END                                                                                                                    AS "Remaining", 
-        ARRAY_TO_STRING( ARRAY_AGG( CONCAT('Instalment-', i.instalments_number, ': ', '£', i.instalments_amountPaid) ), ', ' ) AS "Payment History"
-FROM BOOKING b
-INNER JOIN CUSTOMER cust USING (cust_id)
-INNER JOIN PAYMENT p USING (booking_id)
-INNER JOIN INSTALMENTS i USING (payment_id)
-WHERE cust.cust_email = 'robertmicheals@gmail.com'
-GROUP BY  cust.cust_email,
-          cust.cust_phoneNum,
-          b.booking_id,
-          p.payment_id;
-
--- View for Query 5
-CREATE VIEW package_details AS
-SELECT  p.package_id                                                              AS "Package ID",
-        CONCAT(p.package_start,' - ',p.package_end)                               AS "Package Duration",
-        CASE 
-          WHEN p.package_carRented THEN 'Yes'  
-          ELSE 'No' 
-        END                                                                       AS "With Car",
-        CONCAT('£',ROUND(p.package_pricePP * (1 - (p.package_discount / 100)),2)) AS "Current Price Per Person",
-        CONCAT(h.hotel_name,' - ',a.address_city,' - ',a.address_postcode)        AS "Hotel",
-        CONCAT(f.flight_locationStart,' to ',f.flight_locationEnd)                AS "Flight",
-        CONCAT(f.flight_date,' at ',f.flight_boarding)                            AS "Flight Time"
-FROM PACKAGE p
-INNER JOIN HOTEL h USING (hotel_id)
-INNER JOIN FLIGHT f USING (flight_id)
-INNER JOIN ADDRESS a USING (address_id)
-WHERE p.package_id = 5;
-
-/*--------------------------*/
 /*---------QUERIES----------*/
 /*--------------------------*/
 
@@ -900,3 +814,401 @@ INNER JOIN HOTEL h USING (hotel_id)
 INNER JOIN FLIGHT f USING (flight_id)
 INNER JOIN ADDRESS a USING (address_id)
 WHERE p.package_id = 5;
+
+/*--------------------------*/
+/*----------VIEWS-----------*/
+/*--------------------------*/
+
+-- View for Query 1
+CREATE VIEW best_package AS
+SELECT  b.package_id        AS "Package Number",
+        COUNT(b.package_id) AS "Most Popular Package"
+FROM BOOKING b
+GROUP BY  b.package_id
+ORDER BY "Most Popular Package" DESC
+LIMIT 1;
+
+-- View for Query 2
+CREATE VIEW booking_details AS
+SELECT  (
+          SELECT  CONCAT(c.cust_email,' | ',c.cust_phoneNum)
+          FROM CUSTOMER c
+          WHERE c.cust_id = b.cust_id
+        )                                             AS "Customer Contacts", 
+        b.package_id                                  AS "Package Number", 
+        CONCAT(p.package_start, ' - ', p.package_end) AS "Package Time Frame", 
+        (
+          SELECT  CONCAT(f.flight_date,' at ',f.flight_boarding,' - ',f.flight_locationStart,' to ',f.flight_locationEnd)
+          FROM FLIGHT f
+          WHERE f.flight_id = p.flight_id 
+        )                                             AS "Flight Information", 
+        (
+          SELECT  h.hotel_name
+          FROM HOTEL h
+          WHERE h.hotel_id = p.hotel_id 
+        )                                             AS "Hotel"
+FROM BOOKING b
+INNER JOIN PACKAGE p ON b.package_id = p.package_id
+WHERE b.booking_id = 3; 
+
+-- View for Query 3
+CREATE VIEW cbg_employee_info AS
+SELECT  d.dmpt_name                             AS "Department",
+        CONCAT(e.emp_fname,' ',e.emp_lname)     AS "Employee",
+        r.role_name                             AS "Role",
+        CONCAT(e.emp_id,'@',d.dmpt_emailSuffix) AS "Email Address",
+        e.emp_phoneNum                          AS "Phone"
+FROM EMPLOYEE e
+INNER JOIN ROLE r USING (role_id)
+INNER JOIN DEPARTMENT d USING (dmpt_id)
+WHERE e.branch_id = (
+  SELECT  b.branch_id
+  FROM BRANCH b
+  WHERE b.branch_name = 'Sunnyside Cambridge' 
+)
+ORDER BY d.dmpt_name, e.emp_lname ASC;
+
+-- View for Query 4
+CREATE VIEW package_payment_status AS
+SELECT  CONCAT(cust.cust_email,' | ',cust.cust_phoneNum)                                                                       AS "Customer Contacts",
+        b.booking_id                                                                                                           AS "Booking ID",
+        p.payment_id                                                                                                           AS "Payment ID",
+        (
+          SELECT  COUNT(*)
+          FROM TRAVELLERS t
+          WHERE t.booking_id = b.booking_id 
+        )                                                                                                                      AS "Number of Travellers", 
+        CONCAT('£', p.payment_totalPrice)                                                                                      AS "Total Price",
+        CONCAT('£', p.payment_amountPaid)                                                                                      AS "Amount Paid",
+        CASE 
+          WHEN p.payment_totalPrice - p.payment_amountPaid < 0 THEN 'N/A' 
+          ELSE CONCAT('£', p.payment_totalPrice - p.payment_amountPaid) 
+        END                                                                                                                    AS "Remaining", 
+        ARRAY_TO_STRING( ARRAY_AGG( CONCAT('Instalment-', i.instalments_number, ': ', '£', i.instalments_amountPaid) ), ', ' ) AS "Payment History"
+FROM BOOKING b
+INNER JOIN CUSTOMER cust USING (cust_id)
+INNER JOIN PAYMENT p USING (booking_id)
+INNER JOIN INSTALMENTS i USING (payment_id)
+WHERE cust.cust_email = 'robertmicheals@gmail.com'
+GROUP BY  cust.cust_email,
+          cust.cust_phoneNum,
+          b.booking_id,
+          p.payment_id;
+
+-- View for Query 5
+CREATE VIEW package_details AS
+SELECT  p.package_id                                                              AS "Package ID",
+        CONCAT(p.package_start,' - ',p.package_end)                               AS "Package Duration",
+        CASE 
+          WHEN p.package_carRented THEN 'Yes'  
+          ELSE 'No' 
+        END                                                                       AS "With Car",
+        CONCAT('£',ROUND(p.package_pricePP * (1 - (p.package_discount / 100)),2)) AS "Current Price Per Person",
+        CONCAT(h.hotel_name,' - ',a.address_city,' - ',a.address_postcode)        AS "Hotel",
+        CONCAT(f.flight_locationStart,' to ',f.flight_locationEnd)                AS "Flight",
+        CONCAT(f.flight_date,' at ',f.flight_boarding)                            AS "Flight Time"
+FROM PACKAGE p
+INNER JOIN HOTEL h USING (hotel_id)
+INNER JOIN FLIGHT f USING (flight_id)
+INNER JOIN ADDRESS a USING (address_id)
+WHERE p.package_id = 5;
+
+/*--------------------------*/
+/*-----------ROLES----------*/
+/*--------------------------*/
+
+-- General Roles/Templates
+
+CREATE USER manager WITH NOSUPERUSER NOCREATEDB CREATEROLE PASSWORD NULL;
+
+CREATE USER employee WITH NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD NULL;
+
+GRANT CREATE ON DATABASE sunnyside TO manager;
+
+-- Groups
+CREATE GROUP admin_managers WITH INHERIT IN ROLE manager;
+CREATE GROUP admin_employees WITH INHERIT IN ROLE employee;
+CREATE GROUP resdev_managers WITH INHERIT IN ROLE manager;
+CREATE GROUP resdev_employees WITH INHERIT IN ROLE employee;
+CREATE GROUP marketingsales_managers WITH INHERIT IN ROLE manager;
+CREATE GROUP marketingsales_employees WITH INHERIT IN ROLE employee;
+CREATE GROUP hr_managers WITH INHERIT IN ROLE manager;
+CREATE GROUP hr_employees WITH INHERIT IN ROLE employee;
+CREATE GROUP custservice_managers WITH INHERIT IN ROLE manager;
+CREATE GROUP custservice_employees WITH INHERIT IN ROLE employee;
+CREATE GROUP accountfinance_managers WITH INHERIT IN ROLE manager;
+CREATE GROUP accountfinance_employees WITH INHERIT IN ROLE employee;
+
+
+-- Privileges
+
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public TO admin_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE ON ALL TABLES IN SCHEMA public TO admin_employees;
+
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON BOOKING TO resdev_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON PACKAGE TO resdev_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON BRANCH_PACKAGE TO resdev_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON BRANCH TO resdev_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON HOTEL TO resdev_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ROOM TO resdev_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ROOM_AMENITIES TO resdev_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON HOTEL_AMENITIES TO resdev_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON AMENITIES TO resdev_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE ON BOOKING TO resdev_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON PACKAGE TO resdev_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH_PACKAGE TO resdev_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH TO resdev_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON HOTEL TO resdev_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON ROOM TO resdev_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON ROOM_AMENITIES TO resdev_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON HOTEL_AMENITIES TO resdev_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON AMENITIES TO resdev_employees;
+
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON BOOKING TO marketingsales_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON PACKAGE TO marketingsales_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON HOTEL TO marketingsales_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ROOM TO marketingsales_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ROOM_AMENITIES TO marketingsales_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON HOTEL_AMENITIES TO marketingsales_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON AMENITIES TO marketingsales_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON FLIGHT TO marketingsales_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE ON BOOKING TO marketingsales_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON PACKAGE TO marketingsales_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON HOTEL TO marketingsales_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON ROOM TO marketingsales_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON ROOM_AMENITIES TO marketingsales_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON HOTEL_AMENITIES TO marketingsales_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON AMENITIES TO marketingsales_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON FLIGHT TO marketingsales_employees;
+
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON EMPLOYEE TO hr_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ROLE TO hr_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON DEPARTMENT TO hr_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON BRANCH TO hr_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE ON EMPLOYEE TO hr_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON ROLE TO hr_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON DEPARTMENT TO hr_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH TO hr_employees;
+
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON BOOKING TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON PAYMENT TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON CUSTOMER TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON INSTALMENTS TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON TRAVELLERS TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ADDRESS TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON PACKAGE TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON HOTEL TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ROOM TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ROOM_AMENITIES TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON HOTEL_AMENITIES TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON AMENITIES TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON FLIGHT TO custservice_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE ON BOOKING TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON PAYMENT TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON CUSTOMER TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON INSTALMENTS TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON TRAVELLERS TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON ADDRESS TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON PACKAGE TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON HOTEL TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON ROOM TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON ROOM_AMENITIES TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON HOTEL_AMENITIES TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON AMENITIES TO custservice_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON FLIGHT TO custservice_employees;
+
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON BOOKING TO accountfinance_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON PAYMENT TO accountfinance_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON CUSTOMER TO accountfinance_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON INSTALMENTS TO accountfinance_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON PACKAGE TO accountfinance_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON EMPLOYEE TO accountfinance_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ROLE TO accountfinance_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON BRANCH TO accountfinance_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON BRANCH_PACKAGE TO accountfinance_managers;
+GRANT SELECT, UPDATE, INSERT, DELETE ON BOOKING TO accountfinance_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON PAYMENT TO accountfinance_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON CUSTOMER TO accountfinance_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON INSTALMENTS TO accountfinance_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON PACKAGE TO accountfinance_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON EMPLOYEE TO accountfinance_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON ROLE TO accountfinance_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH TO accountfinance_employees;
+GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH_PACKAGE TO accountfinance_employees;
+
+-- Users
+
+CREATE USER lwang01 WITH INHERIT PASSWORD 'password01' IN ROLE admin_managers;
+CREATE DATABASE lwang01 OWNER lwang01;
+CREATE USER wli02 WITH INHERIT PASSWORD 'password02' IN ROLE admin_managers;
+CREATE DATABASE wli02 OWNER wli02;
+CREATE USER fzhang03 WITH INHERIT PASSWORD 'password03' IN ROLE admin_managers;
+CREATE DATABASE fzhang03 OWNER fzhang03;
+CREATE USER wcheung04 WITH INHERIT PASSWORD 'password04' IN ROLE admin_employees;
+CREATE DATABASE wcheung04 OWNER wcheung04;
+CREATE USER xteoh05 WITH INHERIT PASSWORD 'password05' IN ROLE resdev_managers;
+CREATE DATABASE xteoh05 OWNER xteoh05;
+CREATE USER xchan06 WITH INHERIT PASSWORD 'password06' IN ROLE resdev_managers;
+CREATE DATABASE xchan06 OWNER xchan06;
+CREATE USER nyeung07 WITH INHERIT PASSWORD 'password07' IN ROLE resdev_managers;
+CREATE DATABASE nyeung07 OWNER nyeung07;
+CREATE USER xwong8 WITH INHERIT PASSWORD 'password08' IN ROLE resdev_employees;
+CREATE DATABASE xwong08 OWNER xwong08;
+CREATE USER wchiu09 WITH INHERIT PASSWORD 'password09' IN ROLE resdev_employees;
+CREATE DATABASE wchiu09 OWNER wchiu09;
+CREATE USER mng10 WITH INHERIT PASSWORD 'password10' IN ROLE marketingsales_managers;
+CREATE DATABASE mng10 OWNER mng10;
+CREATE USER jchow11 WITH INHERIT PASSWORD 'password11' IN ROLE marketingsales_managers;
+CREATE DATABASE jchow11 OWNER jchow11;
+CREATE USER lchao12 WITH INHERIT PASSWORD 'password12' IN ROLE marketingsales_managers;
+CREATE DATABASE lchao12 OWNER lchao12;
+CREATE USER qtsui13 WITH INHERIT PASSWORD 'password13' IN ROLE marketingsales_managers;
+CREATE DATABASE qtsui13 OWNER qtsui13;
+CREATE USER jchu14 WITH INHERIT PASSWORD 'password14' IN ROLE marketingsales_employees;
+CREATE DATABASE jchu14 OWNER jchu14;
+CREATE USER mwu15 WITH INHERIT PASSWORD 'password15' IN ROLE marketingsales_managers;
+CREATE DATABASE mwu15 OWNER mwu15;
+CREATE USER mho16 WITH INHERIT PASSWORD 'password16' IN ROLE marketingsales_employees;
+CREATE DATABASE mho16 OWNER mho16;
+CREATE USER llam17 WITH INHERIT PASSWORD 'password17' IN ROLE marketingsales_employees;
+CREATE DATABASE llam17 OWNER llam17;
+CREATE USER jlo18 WITH INHERIT PASSWORD 'password18' IN ROLE marketingsales_employees;
+CREATE DATABASE jlo18 OWNER jlo18;
+CREATE USER yzeng19 WITH INHERIT PASSWORD 'password19' IN ROLE hr_managers;
+CREATE DATABASE yzeng19 OWNER yzeng19;
+CREATE USER yze20 WITH INHERIT PASSWORD 'password20' IN ROLE hr_managers;
+CREATE DATABASE yze20 OWNER yze20;
+CREATE USER ysung21 WITH INHERIT PASSWORD 'password21' IN ROLE hr_employees;
+CREATE DATABASE ysung21 OWNER ysung21;
+CREATE USER ydang22 WITH INHERIT PASSWORD 'password22' IN ROLE custservice_managers;
+CREATE DATABASE ydang22 OWNER ydang22;
+CREATE USER tteng23 WITH INHERIT PASSWORD 'password23' IN ROLE custservice_managers;
+CREATE DATABASE tteng23 OWNER tteng23;
+CREATE USER mto24 WITH INHERIT PASSWORD 'password24' IN ROLE custservice_employees;
+CREATE DATABASE mto24 OWNER mto24;
+CREATE USER jhai25 WITH INHERIT PASSWORD 'password25' IN ROLE custservice_employees;
+CREATE DATABASE jhai25 OWNER jhai25;
+CREATE USER jkyo26 WITH INHERIT PASSWORD 'password26' IN ROLE accountfinance_managers;
+CREATE DATABASE jkyo26 OWNER jkyo26;
+CREATE USER xdeung27 WITH INHERIT PASSWORD 'password27' IN ROLE accountfinance_managers;
+CREATE DATABASE xdeung27 OWNER xdeung27;
+CREATE USER gto28 WITH INHERIT PASSWORD 'password28' IN ROLE accountfinance_employees;
+CREATE DATABASE gto28 OWNER gto28;
+CREATE USER ptengco29 WITH INHERIT PASSWORD 'password29' IN ROLE accountfinance_employees;
+CREATE DATABASE ptengco29 OWNER ptengco29;
+CREATE USER aabe30 WITH INHERIT PASSWORD 'password30' IN ROLE admin_managers;
+CREATE DATABASE aabe30 OWNER aabe30;
+CREATE USER habiko31 WITH INHERIT PASSWORD 'password31' IN ROLE admin_managers;
+CREATE DATABASE habiko31 OWNER habiko31;
+CREATE USER aabhuraya32 WITH INHERIT PASSWORD 'password32' IN ROLE admin_managers;
+CREATE DATABASE aabhuraya32 OWNER aabhuraya32;
+CREATE USER hadachi33 WITH INHERIT PASSWORD 'password33' IN ROLE admin_employees;
+CREATE DATABASE hadachi33 OWNER hadachi33;
+CREATE USER aadachihara34 WITH INHERIT PASSWORD 'password34' IN ROLE resdev_managers;
+CREATE DATABASE aadachihara34 OWNER aadachihara34;
+CREATE USER hagawa35 WITH INHERIT PASSWORD 'password35' IN ROLE resdev_managers;
+CREATE DATABASE hagawa35 OWNER hagawa35;
+CREATE USER baguni36 WITH INHERIT PASSWORD 'password36' IN ROLE resdev_managers;
+CREATE DATABASE baguni36 OWNER baguni36;
+CREATE USER hahane37 WITH INHERIT PASSWORD 'password37' IN ROLE resdev_employees;
+CREATE DATABASE hahane37 OWNER hahane37;
+CREATE USER faikawa38 WITH INHERIT PASSWORD 'password38' IN ROLE resdev_employees;
+CREATE DATABASE faikawa38 OWNER faikawa38;
+CREATE USER iaoki39 WITH INHERIT PASSWORD 'password39' IN ROLE marketingsales_managers;
+CREATE DATABASE iaoki39 OWNER iaoki39;
+CREATE USER haiuchi40 WITH INHERIT PASSWORD 'password40' IN ROLE marketingsales_managers;
+CREATE DATABASE haiuchi40 OWNER haiuchi40;
+CREATE USER kamamiya41 WITH INHERIT PASSWORD 'password41' IN ROLE marketingsales_managers;
+CREATE DATABASE kamamiya41 OWNER kamamiya41;
+CREATE USER jbaba42 WITH INHERIT PASSWORD 'password42' IN ROLE marketingsales_managers;
+CREATE DATABASE jbaba42 OWNER jbaba42;
+CREATE USER mbando43 WITH INHERIT PASSWORD 'password43' IN ROLE marketingsales_employees;
+CREATE DATABASE mbando43 OWNER mbando43;
+CREATE USER kbushida44 WITH INHERIT PASSWORD 'password44' IN ROLE marketingsales_managers;
+CREATE DATABASE kbushida44 OWNER kbushida44;
+CREATE USER rchiba45 WITH INHERIT PASSWORD 'password45' IN ROLE marketingsales_employees;
+CREATE DATABASE rchiba45 OWNER rchiba45;
+CREATE USER kchibana46 WITH INHERIT PASSWORD 'password46' IN ROLE marketingsales_employees;
+CREATE DATABASE kchibana46 OWNER kchibana46;
+CREATE USER rchisaka47 WITH INHERIT PASSWORD 'password47' IN ROLE marketingsales_employees;
+CREATE DATABASE rchisaka47 OWNER rchisaka47;
+CREATE USER ichinen48 WITH INHERIT PASSWORD 'password48' IN ROLE hr_managers;
+CREATE DATABASE ichinen48 OWNER ichinen48;
+CREATE USER sdaguchi49 WITH INHERIT PASSWORD 'password49' IN ROLE hr_managers;
+CREATE DATABASE sdaguchi49 OWNER sdaguchi49;
+CREATE USER adaigo50 WITH INHERIT PASSWORD 'password50' IN ROLE hr_employees;
+CREATE DATABASE adaigo50 OWNER adaigo50;
+CREATE USER sdate51 WITH INHERIT PASSWORD 'password51' IN ROLE custservice_managers;
+CREATE DATABASE sdate51 OWNER sdate51;
+CREATE USER ymatsumoto52 WITH INHERIT PASSWORD 'password52' IN ROLE custservice_managers;
+CREATE DATABASE ymatsumoto52 OWNER ymatsumoto52;
+CREATE USER syamaguchi53 WITH INHERIT PASSWORD 'password53' IN ROLE custservice_employees;
+CREATE DATABASE syamaguchi53 OWNER syamaguchi53;
+CREATE USER msasaki54 WITH INHERIT PASSWORD 'password54' IN ROLE custservice_employees;
+CREATE DATABASE msasaki54 OWNER msasaki54;
+CREATE USER myoshida55 WITH INHERIT PASSWORD 'password55' IN ROLE accountfinance_managers;
+CREATE DATABASE myoshida55 OWNER myoshida55;
+CREATE USER kyamada56 WITH INHERIT PASSWORD 'password56' IN ROLE accountfinance_managers;
+CREATE DATABASE kyamada56 OWNER kyamada56;
+CREATE USER kkato57 WITH INHERIT PASSWORD 'password57' IN ROLE accountfinance_employees;
+CREATE DATABASE kkato57 OWNER kkato57;
+CREATE USER iyamamoto58 WITH INHERIT PASSWORD 'password58' IN ROLE accountfinance_employees;
+CREATE DATABASE iyamamoto58 OWNER iyamamoto58;
+CREATE USER hkobayashi59 WITH INHERIT PASSWORD 'password59' IN ROLE admin_managers;
+CREATE DATABASE hkobayashi59 OWNER hkobayashi59;
+CREATE USER hnakamura60 WITH INHERIT PASSWORD 'password60' IN ROLE admin_managers;
+CREATE DATABASE hnakamura60 OWNER hnakamura60;
+CREATE USER hito61 WITH INHERIT PASSWORD 'password61' IN ROLE admin_managers;
+CREATE DATABASE hito61 OWNER hito61;
+CREATE USER ewatanabe62 WITH INHERIT PASSWORD 'password62' IN ROLE admin_employees;
+CREATE DATABASE ewatanabe62 OWNER ewatanabe62;
+CREATE USER dtanaka63 WITH INHERIT PASSWORD 'password63' IN ROLE resdev_managers;
+CREATE DATABASE dtanaka63 OWNER dtanaka63;
+CREATE USER ctakahashi64 WITH INHERIT PASSWORD 'password64' IN ROLE resdev_managers;
+CREATE DATABASE ctakahashi64 OWNER ctakahashi64;
+CREATE USER asuzuki65 WITH INHERIT PASSWORD 'password65' IN ROLE resdev_managers;
+CREATE DATABASE asuzuki65 OWNER asuzuki65;
+CREATE USER asato66 WITH INHERIT PASSWORD 'password66' IN ROLE resdev_employees;
+CREATE DATABASE asato66 OWNER asato66;
+CREATE USER pjung67 WITH INHERIT PASSWORD 'password67' IN ROLE resdev_employees;
+CREATE DATABASE pjung67 OWNER pjung67;
+CREATE USER byun68 WITH INHERIT PASSWORD 'password68' IN ROLE marketingsales_managers;
+CREATE DATABASE byun68 OWNER byun68;
+CREATE USER ccho69 WITH INHERIT PASSWORD 'password69' IN ROLE marketingsales_managers;
+CREATE DATABASE ccho69 OWNER ccho69;
+CREATE USER mchoi70 WITH INHERIT PASSWORD 'password70' IN ROLE marketingsales_managers;
+CREATE DATABASE mchoi70 OWNER mchoi70;
+CREATE USER lkim71 WITH INHERIT PASSWORD 'password71' IN ROLE marketingsales_managers;
+CREATE DATABASE lkim71 OWNER lkim71;
+CREATE USER ssung72 WITH INHERIT PASSWORD 'password72' IN ROLE marketingsales_employees;
+CREATE DATABASE ssung72 OWNER ssung72;
+CREATE USER szhou73 WITH INHERIT PASSWORD 'password73' IN ROLE marketingsales_managers;
+CREATE DATABASE szhou73 OWNER szhou73;
+CREATE USER mwu74 WITH INHERIT PASSWORD 'password74' IN ROLE marketingsales_employees;
+CREATE DATABASE mwu74 OWNER mwu74;
+CREATE USER dzhao75 WITH INHERIT PASSWORD 'password75' IN ROLE marketingsales_employees;
+CREATE DATABASE dzhao75 OWNER dzhao75;
+CREATE USER chuang76 WITH INHERIT PASSWORD 'password76' IN ROLE marketingsales_employees;
+CREATE DATABASE chuang76 OWNER chuang76;
+CREATE USER jyang77 WITH INHERIT PASSWORD 'password77' IN ROLE hr_managers;
+CREATE DATABASE jyang77 OWNER jyang77;
+CREATE USER ochen78 WITH INHERIT PASSWORD 'password78' IN ROLE hr_managers;
+CREATE DATABASE ochen78 OWNER ochen78;
+CREATE USER rliu79 WITH INHERIT PASSWORD 'password79' IN ROLE hr_employees;
+CREATE DATABASE rliu79 OWNER rliu79;
+CREATE USER szhang80 WITH INHERIT PASSWORD 'password80' IN ROLE custservice_managers;
+CREATE DATABASE szhang80 OWNER szhang80;
+CREATE USER cwang81 WITH INHERIT PASSWORD 'password81' IN ROLE custservice_managers;
+CREATE DATABASE cwang81 OWNER cwang81;
+CREATE USER rbob82 WITH INHERIT PASSWORD 'password82' IN ROLE custservice_employees;
+CREATE DATABASE rbob82 OWNER rbob82;
+CREATE USER bross83 WITH INHERIT PASSWORD 'password83' IN ROLE custservice_employees;
+CREATE DATABASE bross83 OWNER bross83;
+CREATE USER dlong84 WITH INHERIT PASSWORD 'password84' IN ROLE accountfinance_managers;
+CREATE DATABASE dlong84 OWNER dlong84;
+CREATE USER mlee85 WITH INHERIT PASSWORD 'password85' IN ROLE accountfinance_managers;
+CREATE DATABASE mlee85 OWNER mlee85;
+CREATE USER jyip86 WITH INHERIT PASSWORD 'password86' IN ROLE accountfinance_employees;
+CREATE DATABASE jyip86 OWNER jyip86;
+CREATE USER jyany87 WITH INHERIT PASSWORD 'password87' IN ROLE accountfinance_employees;
+CREATE DATABASE jyany87 OWNER jyany87;
