@@ -1250,6 +1250,28 @@ GRANT SELECT, UPDATE, INSERT, DELETE ON ROLE TO accountfinance_employees;
 GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH TO accountfinance_employees;
 GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH_PACKAGE TO accountfinance_employees;
 
+
+GRANT SELECT ON best_package TO resdev_managers;
+GRANT SELECT ON best_package TO resdev_employees;
+GRANT SELECT ON best_package TO marketingsales_managers;
+GRANT SELECT ON best_package TO marketingsales_employees;
+GRANT SELECT ON best_package TO custservice_managers;
+GRANT SELECT ON best_package TO custservice_employees;
+
+GRANT SELECT ON booking_details TO custservice_managers;
+GRANT SELECT ON booking_details TO custservice_employees;
+
+GRANT SELECT ON cbg_employee_info TO hr_managers;
+GRANT SELECT ON cbg_employee_info TO hr_employees;
+
+GRANT SELECT ON package_payment_status TO custservice_managers;
+GRANT SELECT ON package_payment_status TO custservice_employees;
+
+GRANT SELECT ON package_details TO marketingsales_managers;
+GRANT SELECT ON package_details TO marketingsales_employees;
+GRANT SELECT ON package_details TO custservice_managers;
+GRANT SELECT ON package_details TO custservice_employees;
+
 -- Users
 
 CREATE USER lwang01 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password01' IN ROLE admin_managers;
