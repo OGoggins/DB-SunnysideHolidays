@@ -330,16 +330,21 @@ $BODY$;
 /*--------PROCEDURES--------*/
 /*--------------------------*/
 
+-- Procedure that resets a user's password. It takes 3 parameters, the role name, the employee ID, the new password. 
+-- If the new password is above 8 characters in length and contains a number then it will ALTER ROLE and UPDATE the employee table where all the passwords are stored
+-- Else, error.
+
 CREATE OR REPLACE PROCEDURE set_user_password(p_user VARCHAR(32), p_emp_id INT, p_input VARCHAR(100))
 LANGUAGE PLPGSQL
 AS 
 $BODY$
 BEGIN 
-    CASE WHEN LENGTH(p_input) > 8 AND p_input ILIKE '^[0-9\.]+$' THEN 
-      ALTER USER p_user WITH ENCRYPTED PASSWORD p_input;
-      UPDATE EMPLOYEE SET emp_password = p_input WHERE emp_id = p_emp_id; -- Try EXECUTE format()
-    ELSE NULL;
-    END CASE;
+    IF LENGTH(p_input) > 8 AND p_input ~ '[0-9]+' THEN 
+      EXECUTE format('ALTER USER %I WITH ENCRYPTED PASSWORD %L', p_user, p_input);
+      EXECUTE format('UPDATE EMPLOYEE SET emp_password = %L WHERE emp_id = %s', p_input, p_emp_id);
+    ELSE
+       RAISE EXCEPTION 'Password can only contain numbers AND be longer than 8 characters';
+    END IF;
 END;
 $BODY$;
 
@@ -1454,7 +1459,7 @@ GROUP BY  cust.cust_email,
           p.payment_id;
 
 -- View for Query 5
-CREATE REPLACE OR VIEW package_details AS
+CREATE OR  REPLACE VIEW package_details AS
 SELECT  p.package_id                                                              AS "Package ID",
         CONCAT(p.package_start,' - ',p.package_end)                               AS "Package Duration",
         CASE 
