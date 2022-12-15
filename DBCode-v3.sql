@@ -49,6 +49,7 @@ DROP TABLE IF EXISTS EMPLOYEE CASCADE;
 DROP TABLE IF EXISTS ROLE CASCADE; 
 DROP TABLE IF EXISTS DEPARTMENT CASCADE; 
 DROP TABLE IF EXISTS BRANCH_PACKAGE CASCADE; 
+DROP TABLE IF EXISTS CAR_PICKUP CASCADE;
 DROP TABLE IF EXISTS PACKAGE CASCADE; 
 DROP TABLE IF EXISTS FLIGHT CASCADE; 
 DROP TABLE IF EXISTS BRANCH CASCADE; 
@@ -64,6 +65,7 @@ CREATE TABLE ADDRESS (
   address_id SERIAL PRIMARY KEY,
   address_line1 VARCHAR(150) NOT NULL,
   address_line2 VARCHAR(150),
+  address_country CHAR(2) NOT NULL,
   address_city VARCHAR(50) NOT NULL,
   address_postcode VARCHAR(8) NOT NULL UNIQUE
 );
@@ -74,7 +76,7 @@ CREATE TABLE CUSTOMER (
   cust_fname VARCHAR(50) NOT NULL,
   cust_lname VARCHAR(50) NOT NULL,
   cust_dob DATE NOT NULL,
-  cust_phoneNum VARCHAR(20) NOT NULL UNIQUE,
+  cust_phoneNum VARCHAR(11) NOT NULL UNIQUE,
   cust_email VARCHAR(150) NOT NULL UNIQUE,
     FOREIGN KEY (address_id)
       REFERENCES ADDRESS(address_id)
@@ -86,7 +88,6 @@ CREATE TABLE HOTEL (
   address_id INT NOT NULL,
   hotel_name VARCHAR(50) NOT NULL,
   hotel_rating CHAR(1) NOT NULL,
-  hotel_country CHAR(2) NOT NULL,
   hotel_phoneNum VARCHAR(20) NOT NULL UNIQUE,
   hotel_totalRooms INT NOT NULL,
     FOREIGN KEY (address_id)
@@ -143,20 +144,28 @@ CREATE TABLE BRANCH (
 
 CREATE TABLE FLIGHT (
   flight_id SERIAL PRIMARY KEY,
-  flight_locationStart CHAR(2) NOT NULL,
-  flight_locationEnd CHAR(2) NOT NULL,
-  flight_date DATE NOT NULL,
-  flight_boarding TIME NOT NULL
+  flight_location_from CHAR(2) NOT NULL,
+  flight_location_to CHAR(2) NOT NULL,
+  flight_date_start DATE NOT NULL,
+  flight_boarding_start TIME NOT NULL,
+  flight_date_end DATE NOT NULL,
+  flight_boarding_end TIME NOT NULL
+);
+
+CREATE TABLE CAR_PICKUP (
+  car_id SERIAL PRIMARY KEY,
+  address_id INT NOT NULL,
+  car_collection_date DATE NOT NULL,
+  car_return_date DATE NOT NULL
 );
 
 CREATE TABLE PACKAGE (
   package_id SERIAL PRIMARY KEY,
   flight_id INT NOT NULL,
   hotel_id INT NOT NULL,
-  package_start DATE NOT NULL,
-  package_end DATE NOT NULL,
+  car_id INT,
+  package_car_rented BOOLEAN NOT NULL,
   package_discount DECIMAL(5, 2) NOT NULL,
-  package_carRented BOOLEAN NOT NULL,
   package_pricePP DECIMAL(8, 2) NOT NULL,
     FOREIGN KEY (flight_id)
       REFERENCES FLIGHT(flight_id)
@@ -204,7 +213,7 @@ CREATE TABLE EMPLOYEE (
   emp_fname VARCHAR(50) NOT NULL,
   emp_lname VARCHAR(50) NOT NULL,
   emp_dob DATE NOT NULL,
-  emp_phoneNum VARCHAR(20) NOT NULL UNIQUE,
+  emp_phoneNum VARCHAR(11) NOT NULL UNIQUE,
     FOREIGN KEY (address_id)
       REFERENCES ADDRESS(address_id)
       ON DELETE CASCADE,
@@ -220,6 +229,8 @@ CREATE TABLE BOOKING (
   booking_id SERIAL PRIMARY KEY,
   cust_id INT NOT NULL,
   package_id INT NOT NULL,
+  booking_start DATE NOT NULL,
+  booking_end DATE NOT NULL,
     FOREIGN KEY (cust_id)
       REFERENCES CUSTOMER(cust_id)
       ON DELETE CASCADE,
@@ -374,128 +385,130 @@ EXECUTE PROCEDURE update_amountPaid_after_instalments_insert();
 /*---------INSERTS---------*/
 /*--------------------------*/
 
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('11 Stoneleigh Place', 'Suite 127', 'Oxford', 'OX10 6PT');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('12 Buckfast Street', null, 'Oxford', 'OX45 3AF');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('13 Abbots Place', null, 'London', 'NW5 9HX');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('14 Abbotswell Road', 'Suite 63', 'London', 'NW12 4SE');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('15 Herald Street', null, 'Portsmouth', 'PO60 6HW');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('16 Hazel Grove', 'Suite 97', 'Portsmouth', 'PO15 7JE');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('17 Corn Street', 'Suite 965', 'Oxford', 'OX20 3RA');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Benhill Road', null, 'Oxford', 'OX3 1NA');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('13 Castle Road', 'Suite 12', 'Oxford', 'OX33 1SP');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Lapton Road', null, 'Oxford', 'OX10 1EA');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('12 Belgrave Road', null, 'Portsmouth', 'PO38 1JJ');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('13 Shirrell Heath', null, 'Southampton', 'SO32 2JY');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('13 Umm Suqeim 3', null, 'Dubai', '21936');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('14 Crescent Rd - The Palm Jumeirah', null, 'Dubai', '29406');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('15 C. de Velázquez', null, 'Madrid', '28001');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('63 Springfield Road', null, 'Cambridge', 'CB60 5DF');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('46 School Lane', null, 'Sunderland', 'SR32 8FV');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('62 The Grove', null, 'Liverpool', 'LP68 3DY');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('1 Stanhope Cottages', null, 'Porstmouth', 'PO10 6XQ');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('2 Heywood Moorings', null, 'Porstmouth', 'PO24 4LA');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('3 Ruskin Circus', null, 'Porstmouth', 'PO4 2SG');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('4 Oval Road South', null, 'Porstmouth', 'PO16 9AW');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('5 Academy Las', null, 'Porstmouth', 'PO42 1ZW');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('6 Madeira Barton', null, 'Porstmouth', 'PO3 8LT');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Francis Laurels', null, 'Porstmouth', 'PO38 0XX');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Sidney Meadows', null, 'Portsmouth', 'PO2 4JP');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Elmtree Close', null, 'Portsmouth', 'PO19 8PN');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Aspen Ridgeway', null, 'Portsmouth', 'PO8 9NN');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Curtis Gait', null, 'Portsmouth', 'PO14 5EW');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Curtis By-Pass', null, 'Portsmouth', 'PO3 0EP');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Long Passage', null, 'Portsmouth', 'PO1 4AR');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Jade Row', null, 'Portsmouth', 'PO2 5BS');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Prospect Route', null, 'Portsmouth', 'PO3 6CT');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Canal Avenue', null, 'Portsmouth', 'PO4 7DU');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 New Castle Way', null, 'Portsmouth', 'PO5 8EV');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Liberty Street', null, 'Portsmouth', 'PO6 9FW');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Central Street', null, 'Portsmouth', 'PO7 1GX');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Arctic Street', null, 'Portsmouth', 'PO8 2HY');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Ember Row', null, 'Portsmouth', 'PO9 3IZ');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Tower Boulevard', null, 'Portsmouth', 'PO10 4JA');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 General Street', null, 'Portsmouth', 'PO11 5KB');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Medieval Row', null, 'Portsmouth', 'PO12 6LC');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Crown Avenue', null, 'Portsmouth', 'PO13 7MD');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Azure Street', null, 'Portsmouth', 'PO14 8NE');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Green Avenue', null, 'Portsmouth', 'PO15 9OF');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Congress Way', null, 'Portsmouth', 'PO16 1PG');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Elmwood Row', null, 'Portsmouth', 'PO17 2QH');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('7 Laburnum Covert', null, 'Oxford', 'OX16 6SN');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('8 Northanger Drive', null, 'Oxford', 'OX67 8RW');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('9 Raleigh Avenue', null, 'Oxford', 'OX2N 6AS');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('10 Middlefield Crescent', null, 'Oxford', 'OX2 2EG');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('11 Stoneyfields', null, 'Oxford', 'OX4 1BA');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('12 Brooklands Downs', null, 'Oxford', 'OX5 3NQ');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('20 Union North', null, 'Oxford', 'OX30 9QG');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Harebell Heights', null, 'Oxford', 'OX15 5FY');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Morley Close', null, 'Oxford', 'OX31 2XD');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Aylesbury Promenade', null, 'Oxford', 'OX16 6EQ');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Hanbury Square', null, 'Oxford', 'OX7 8SQ');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Greenwood Lawn', null, 'Oxford', 'OX6 5JY');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Starlight Avenue', null, 'Oxford', 'OX1 4AR');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Acorn Avenue', null, 'Oxford', 'OX2 5BS');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Flint Passage', null, 'Oxford', 'OX3 6CT');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Palm Avenue', null, 'Oxford', 'OX4 7DU');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Lily Lane', null, 'Oxford', 'OX5 8EV');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Museum Avenue', null, 'Oxford', 'OX6 9FW');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Polygon Lane', null, 'Oxford', 'OX7 1GX');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Mandarin Street', null, 'Oxford', 'OX8 2HY');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Luna Route', null, 'Oxford', 'OX9 3IZ');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Duchess Way', null, 'Oxford', 'OX0 4JA');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Rose Lane', null, 'Oxford', 'OX1 5KB');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Feathers Boulevard', null, 'Oxford', 'OX2 6LC');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Gold Way', null, 'Oxford', 'OX3 7MD');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Storm Avenue', null, 'Oxford', 'OX4 8NE');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Noble Boulevard', null, 'Oxford', 'OX5 9OF');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Bay Lane', null, 'Oxford', 'OX6 1PG');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Congress Boulevard', null, 'Oxford', 'OX7 2QH');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('13 Leven Fairway', null, 'London', 'NW14 8QH');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('14 Madeira Circus', null, 'London', 'NW7 6PH');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('15 Kensington Circle', null, 'London', 'NW2 4EN');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('16 Hanson Dene', null, 'London', 'NW6 0BX');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('17 Blake Acre', null, 'London', 'NW1 3EX');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Atlas Corner', null, 'London', 'NW2 8PH');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('21 Woods Mill', null, 'London', 'NW7 7LN');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Union Oaks', null, 'London', 'NW7 6QT');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Bloomfield Mead', null, 'London', 'NW20 6AG');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Beresford Court', null, 'London', 'NW3 2DF');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Watling Buildings', null, 'London', 'NW3 9TX');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('18 Douglas Path', null, 'London', 'NW5 5BU');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Snowflake Boulevard', null, 'London', 'NW7 2QH');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Arctic Avenue', null, 'London', 'NW6 1PG');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Hazelnut Street', null, 'London', 'NW5 9OF');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Middle Lane', null, 'London', 'NW4 8NE');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Gem Street', null, 'London', 'NW3 7MD');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Rosemary Avenue', null, 'London', 'NW2 6LC');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Broom Row', null, 'London', 'NW1 5KB');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Cavern Passage', null, 'London', 'NW0 4JA');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Orchid Street', null, 'London', 'NW9 3IZ');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Low Avenue', null, 'London', 'NW8 2HY');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Clarity Lane', null, 'London', 'NW7 1GX');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Bard Boulevard', null, 'London', 'NW6 9FW');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Congress Street', null, 'London', 'NW5 8EV');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Plaza Route', null, 'London', 'NW4 7DU');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Valley Avenue', null, 'London', 'NW3 6CT');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Orchid Avenue', null, 'London', 'NW2 5BS');
-INSERT INTO ADDRESS (address_line1, address_line2, address_city, address_postcode) VALUES ('19 Crystal Street', null, 'London', 'NW1 4AR');
+/* 1 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('11 Stoneleigh Place', 'Suite 127', 'UK', 'Oxford', 'OX10 6PT');
+/* 2 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('12 Buckfast Street', null, 'UK', 'Oxford', 'OX45 3AF');
+/* 3 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Abbots Place', null, 'UK', 'London', 'NW5 9HX');
+/* 4 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Abbotswell Road', 'Suite 63', 'UK', 'London', 'NW12 4SE');
+/* 5 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('15 Herald Street', null, 'UK', 'Portsmouth', 'PO60 6HW');
+/* 6 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('16 Hazel Grove', 'Suite 97', 'UK', 'Portsmouth', 'PO15 7JE');
+/* 7 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('17 Corn Street', 'Suite 965', 'UK', 'Oxford', 'OX20 3RA');
+/* 8 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Benhill Road', null, 'UK', 'Oxford', 'OX3 1NA');
+/* 9 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Castle Road', 'Suite 12', 'UK', 'Oxford', 'OX33 1SP');
+/* 10 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Lapton Road', null, 'UK', 'Oxford', 'OX10 1EA');
+/* 11 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('12 Belgrave Road', null, 'FR', 'Paris', '72115');
+/* 12 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Shirrell Heath', null, 'FR', 'Paris', '78965');
+/* 13 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Umm Suqeim 3', null, 'AE', 'Dubai', '21936');
+/* 14 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Crescent Rd - The Palm Jumeirah', null, 'AE', 'Dubai', '29406');
+/* 15 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('15 C. de Velázquez', null, 'ES', 'Madrid', '28001');
+/* 16 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('63 Springfield Road', null, 'UK', 'Cambridge', 'CB60 5DF');
+/* 17 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('46 School Lane', null, 'UK', 'Sunderland', 'SR32 8FV');
+/* 18 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('62 The Grove', null, 'UK', 'Liverpool', 'LP68 3DY');
+/* 19 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('1 Stanhope Cottages', null, 'UK', 'Porstmouth', 'PO10 6XQ');
+/* 20 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('2 Heywood Moorings', null, 'UK', 'Porstmouth', 'PO24 4LA');
+/* 21 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('3 Ruskin Circus', null, 'UK', 'Porstmouth', 'PO4 2SG');
+/* 22 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('4 Oval Road South', null, 'UK', 'Porstmouth', 'PO16 9AW');
+/* 23 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('5 Academy Las', null, 'UK', 'Porstmouth', 'PO42 1ZW');
+/* 24 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('6 Madeira Barton', null, 'UK', 'Porstmouth', 'PO3 8LT');
+/* 25 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Francis Laurels', null, 'UK', 'Porstmouth', 'PO38 0XX');
+/* 26 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Sidney Meadows', null, 'UK', 'Portsmouth', 'PO2 4JP');
+/* 27 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Elmtree Close', null, 'UK', 'Portsmouth', 'PO19 8PN');
+/* 28 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Aspen Ridgeway', null, 'UK', 'Portsmouth', 'PO8 9NN');
+/* 29 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Curtis Gait', null, 'UK', 'Portsmouth', 'PO14 5EW');
+/* 30 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Curtis By-Pass', null, 'UK', 'Portsmouth', 'PO3 0EP');
+/* 31 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Long Passage', null, 'UK', 'Portsmouth', 'PO1 4AR');
+/* 32 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Jade Row', null, 'UK', 'Portsmouth', 'PO2 5BS');
+/* 33 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Prospect Route', null, 'UK', 'Portsmouth', 'PO3 6CT');
+/* 34 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Canal Avenue', null, 'UK', 'Portsmouth', 'PO4 7DU');
+/* 35 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 New Castle Way', null, 'UK', 'Portsmouth', 'PO5 8EV');
+/* 36 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Liberty Street', null, 'UK', 'Portsmouth', 'PO6 9FW');
+/* 37 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Central Street', null, 'UK', 'Portsmouth', 'PO7 1GX');
+/* 38 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Arctic Street', null, 'UK', 'Portsmouth', 'PO8 2HY');
+/* 39 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Ember Row', null, 'UK', 'Portsmouth', 'PO9 3IZ');
+/* 40 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Tower Boulevard', null, 'UK', 'Portsmouth', 'PO10 4JA');
+/* 41 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 General Street', null, 'UK', 'Portsmouth', 'PO11 5KB');
+/* 42 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Medieval Row', null, 'UK', 'Portsmouth', 'PO12 6LC');
+/* 43 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Crown Avenue', null, 'UK', 'Portsmouth', 'PO13 7MD');
+/* 44 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Azure Street', null, 'UK', 'Portsmouth', 'PO14 8NE');
+/* 45 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Green Avenue', null, 'UK', 'Portsmouth', 'PO15 9OF');
+/* 46 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Congress Way', null, 'UK', 'Portsmouth', 'PO16 1PG');
+/* 47 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Elmwood Row', null, 'UK', 'Portsmouth', 'PO17 2QH');
+/* 48 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('7 Laburnum Covert', null, 'UK', 'Oxford', 'OX16 6SN');
+/* 49 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('8 Northanger Drive', null, 'UK', 'Oxford', 'OX67 8RW');
+/* 50 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('9 Raleigh Avenue', null, 'UK', 'Oxford', 'OX2N 6AS');
+/* 51 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('10 Middlefield Crescent', null, 'UK', 'Oxford', 'OX2 2EG');
+/* 52 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('11 Stoneyfields', null, 'UK', 'Oxford', 'OX4 1BA');
+/* 53 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('12 Brooklands Downs', null, 'UK', 'Oxford', 'OX5 3NQ');
+/* 54 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('20 Union North', null, 'UK', 'Oxford', 'OX30 9QG');
+/* 55 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Harebell Heights', null, 'UK', 'Oxford', 'OX15 5FY');
+/* 56 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Morley Close', null, 'UK', 'Oxford', 'OX31 2XD');
+/* 57 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Aylesbury Promenade', null, 'UK', 'Oxford', 'OX16 6EQ');
+/* 58 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Hanbury Square', null, 'UK', 'Oxford', 'OX7 8SQ');
+/* 59 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Greenwood Lawn', null, 'UK', 'Oxford', 'OX6 5JY');
+/* 60 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Starlight Avenue', null, 'UK', 'Oxford', 'OX1 4AR');
+/* 61 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Acorn Avenue', null, 'UK', 'Oxford', 'OX2 5BS');
+/* 62 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Flint Passage', null, 'UK', 'Oxford', 'OX3 6CT');
+/* 63 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Palm Avenue', null, 'UK', 'Oxford', 'OX4 7DU');
+/* 64 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Lily Lane', null, 'UK', 'Oxford', 'OX5 8EV');
+/* 65 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Museum Avenue', null, 'UK', 'Oxford', 'OX6 9FW');
+/* 66 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Polygon Lane', null, 'UK', 'Oxford', 'OX7 1GX');
+/* 67 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Mandarin Street', null, 'UK', 'Oxford', 'OX8 2HY');
+/* 68 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Luna Route', null, 'UK', 'Oxford', 'OX9 3IZ');
+/* 69 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Duchess Way', null, 'UK', 'Oxford', 'OX0 4JA');
+/* 70 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Rose Lane', null, 'UK', 'Oxford', 'OX1 5KB');
+/* 71 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Feathers Boulevard', null, 'UK', 'Oxford', 'OX2 6LC');
+/* 72 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Gold Way', null, 'UK', 'Oxford', 'OX3 7MD');
+/* 73 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Storm Avenue', null, 'UK', 'Oxford', 'OX4 8NE');
+/* 74 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Noble Boulevard', null, 'UK', 'Oxford', 'OX5 9OF');
+/* 75 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Bay Lane', null, 'UK', 'Oxford', 'OX6 1PG');
+/* 76 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Congress Boulevard', null, 'UK', 'Oxford', 'OX7 2QH');
+/* 77 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Leven Fairway', null, 'UK', 'London', 'NW14 8QH');
+/* 78 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Madeira Circus', null, 'UK', 'London', 'NW7 6PH');
+/* 79 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('15 Kensington Circle', null, 'UK', 'London', 'NW2 4EN');
+/* 80 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('16 Hanson Dene', null, 'UK', 'London', 'NW6 0BX');
+/* 81 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('17 Blake Acre', null, 'UK', 'London', 'NW1 3EX');
+/* 82 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Atlas Corner', null, 'UK', 'London', 'NW2 8PH');
+/* 83 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('21 Woods Mill', null, 'UK', 'London', 'NW7 7LN');
+/* 84 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Union Oaks', null, 'UK', 'London', 'NW7 6QT');
+/* 85 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Bloomfield Mead', null, 'UK', 'London', 'NW20 6AG');
+/* 86 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Beresford Court', null, 'UK', 'London', 'NW3 2DF');
+/* 87 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Watling Buildings', null, 'UK', 'London', 'NW3 9TX');
+/* 88 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Douglas Path', null, 'UK', 'London', 'NW5 5BU');
+/* 89 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Snowflake Boulevard', null, 'UK', 'London', 'NW7 2QH');
+/* 90 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Arctic Avenue', null, 'UK', 'London', 'NW6 1PG');
+/* 91 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Hazelnut Street', null, 'UK', 'London', 'NW5 9OF');
+/* 92 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Middle Lane', null, 'UK', 'London', 'NW4 8NE');
+/* 93 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Gem Street', null, 'UK', 'London', 'NW3 7MD');
+/* 94 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Rosemary Avenue', null, 'UK', 'London', 'NW2 6LC');
+/* 95 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Broom Row', null, 'UK', 'London', 'NW1 5KB');
+/* 96 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Cavern Passage', null, 'UK', 'London', 'NW0 4JA');
+/* 97 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Orchid Street', null, 'UK', 'London', 'NW9 3IZ');
+/* 98 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Low Avenue', null, 'UK', 'London', 'NW8 2HY');
+/* 99 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Clarity Lane', null, 'UK', 'London', 'NW7 1GX');
+/* 100 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Bard Boulevard', null, 'UK', 'London', 'NW6 9FW');
+/* 101 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Congress Street', null, 'UK', 'London', 'NW5 8EV');
+/* 102 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Plaza Route', null, 'UK', 'London', 'NW4 7DU');
+/* 103 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Valley Avenue', null, 'UK', 'London', 'NW3 6CT');
+/* 104 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Orchid Avenue', null, 'UK', 'London', 'NW2 5BS');
+/* 105 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Crystal Street', null, 'UK', 'London', 'NW1 4AR');
+/* 106 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Meg Heath', null, 'FR', 'Paris', '75003');
+/* 107 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Low don 3', null, 'AE', 'Dubai', '20436');
 
-INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (1, 'James', 'Smith', '1984-01-10', '+44 7457 471053', 'jamessmith@gmail.com');
-INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (2, 'Micheal', 'Lee', '1983-02-11', '+44 7700 036373' , 'micheallee@gmail.com');
-INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (3, 'Robert', 'Micheals', '1985-03-12', '+44 7700 132081' , 'robertmicheals@gmail.com');
-INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (4, 'Maria', 'Garcia', '1999-04-13', '+44 7501 029740' , 'mariagarcia@gmail.com');
-INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (5, 'David', 'Laid', '1992-05-14', '+44 7448 689182' , 'davidlaid@gmail.com');
-INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (6, 'Maria', 'Rodriguez', '1988-06-15', '+44 7457 248442' , 'mariarodriguez@gmail.com');
-INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (7, 'Mary', 'Johnson', '1974-07-16', '+44 7911 804766' , 'maryjohnson@gmail.com');
-INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (8, 'Johnny', 'Bob', '1986-08-17', '+44 7260 070448' , 'johnnybob@gmail.com');
-INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (9, 'Timmy', 'Dock', '1985-07-20', '+44 7272 072348' , 'timmydock@gmail.com');
-INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (10, 'Loudred', 'Smock', '1984-06-25', '+44 7235 072348' , 'lourdredsmock@gmail.com');
+INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (1, 'James', 'Smith', '1984-01-10', '7457 471053', 'jamessmith@gmail.com');
+INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (2, 'Micheal', 'Lee', '1983-02-11', '7700 036373' , 'micheallee@gmail.com');
+INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (3, 'Robert', 'Micheals', '1985-03-12', '7700 132081' , 'robertmicheals@gmail.com');
+INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (4, 'Maria', 'Garcia', '1999-04-13', '7501 029740' , 'mariagarcia@gmail.com');
+INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (5, 'David', 'Laid', '1992-05-14', '7448 689182' , 'davidlaid@gmail.com');
+INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (6, 'Maria', 'Rodriguez', '1988-06-15', '7457 248442' , 'mariarodriguez@gmail.com');
+INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (7, 'Mary', 'Johnson', '1974-07-16', '7911 804766' , 'maryjohnson@gmail.com');
+INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (8, 'Johnny', 'Bob', '1986-08-17', '7260 070448' , 'johnnybob@gmail.com');
+INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (9, 'Timmy', 'Dock', '1985-07-20', '7272 072348' , 'timmydock@gmail.com');
+INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (10, 'Loudred', 'Smock', '1984-06-25', '7235 072348' , 'lourdredsmock@gmail.com');
 
-INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_country, hotel_phoneNum, hotel_totalRooms) VALUES ('Royal Hotel', 11, 3, 'FR', '01983 852186', 300);
-INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_country, hotel_phoneNum, hotel_totalRooms) VALUES ('New Place Hotel', 12, 3, 'FR', '01329 833543', 200);
-INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_country, hotel_phoneNum, hotel_totalRooms) VALUES ('Burj Al Arab', 13, 6, 'AE', '+971 4 301 7777', 500);
-INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_country, hotel_phoneNum, hotel_totalRooms) VALUES ('Atlantis Palms', 14, 5, 'AE', '+971 4 426 2000', 500);
-INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_country, hotel_phoneNum, hotel_totalRooms) VALUES ('Bless Hotel', 15, 4, 'ES', '+34 915 75 28 00', 400);
+INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Royal Hotel', 11, 3, '01983 852186', 300);
+INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('New Place Hotel', 12, 3, '01329 833543', 200);
+INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Burj Al Arab', 13, 6, '+971 4 301 7777', 500);
+INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Atlantis Palms', 14, 5, '+971 4 426 2000', 500);
+INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Bless Hotel', 15, 4, '+34 915 75 28 00', 400);
 
 INSERT INTO ROOM (hotel_id, room_type, room_numOfRoomType) VALUES (1, 'Single Room', 100);
 INSERT INTO ROOM (hotel_id, room_type, room_numOfRoomType) VALUES (1, 'Double Room', 100);
@@ -545,17 +558,20 @@ INSERT INTO ROOM_AMENITIES (room_id, amenities_id) VALUES
 (11, 13), (11, 14), (11, 15), (11, 16), (11, 17), (12, 12), (12, 13), (12, 14), (12, 15), (12, 16), 
 (12, 17), (13, 10), (13, 13), (13, 17), (14, 11), (14, 13), (14, 17), (15, 12), (15, 13), (15, 17);
 
-INSERT INTO FLIGHT (flight_locationStart, flight_locationEnd, flight_date, flight_boarding) VALUES ('UK', 'FR', '2023-01-11', '14:00:00');
-INSERT INTO FLIGHT (flight_locationStart, flight_locationEnd, flight_date, flight_boarding) VALUES ('UK', 'FR', '2023-01-10', '20:00:00');
-INSERT INTO FLIGHT (flight_locationStart, flight_locationEnd, flight_date, flight_boarding) VALUES ('UK', 'AE', '2023-01-09', '07:00:00');
-INSERT INTO FLIGHT (flight_locationStart, flight_locationEnd, flight_date, flight_boarding) VALUES ('UK', 'AE', '2023-01-12', '12:00:00');
-INSERT INTO FLIGHT (flight_locationStart, flight_locationEnd, flight_date, flight_boarding) VALUES ('UK', 'ES', '2023-01-08', '19:00:00');
+INSERT INTO FLIGHT (flight_location_from, flight_location_to, flight_date_start, flight_boarding_start, flight_date_end, flight_boarding_end) VALUES ('UK', 'FR', '2023-01-11', '14:00:00', '2023-02-01', '14:00:00');
+INSERT INTO FLIGHT (flight_location_from, flight_location_to, flight_date_start, flight_boarding_start, flight_date_end, flight_boarding_end) VALUES ('UK', 'FR', '2023-01-10', '20:00:00', '2023-02-01', '14:00:00');
+INSERT INTO FLIGHT (flight_location_from, flight_location_to, flight_date_start, flight_boarding_start, flight_date_end, flight_boarding_end) VALUES ('UK', 'AE', '2023-01-09', '07:00:00', '2023-02-01', '14:00:00');
+INSERT INTO FLIGHT (flight_location_from, flight_location_to, flight_date_start, flight_boarding_start, flight_date_end, flight_boarding_end) VALUES ('UK', 'AE', '2023-01-12', '12:00:00', '2023-02-01', '14:00:00');
+INSERT INTO FLIGHT (flight_location_from, flight_location_to, flight_date_start, flight_boarding_start, flight_date_end, flight_boarding_end) VALUES ('UK', 'ES', '2023-01-08', '19:00:00', '2023-02-01', '14:00:00');
 
-INSERT INTO PACKAGE (flight_id, hotel_id, package_start, package_end, package_discount, package_carRented, package_pricePP) VALUES (1, 1, '2023-01-11', '2023-02-01', 0.0, 'false', 200.00);
-INSERT INTO PACKAGE (flight_id, hotel_id, package_start, package_end, package_discount, package_carRented, package_pricePP) VALUES (2, 2, '2023-01-10', '2023-02-01', 20.0, 'true', 200.00);
-INSERT INTO PACKAGE (flight_id, hotel_id, package_start, package_end, package_discount, package_carRented, package_pricePP) VALUES (3, 3, '2023-01-09', '2023-02-01', 0.0, 'true', 1250.00);
-INSERT INTO PACKAGE (flight_id, hotel_id, package_start, package_end, package_discount, package_carRented, package_pricePP) VALUES (4, 4, '2023-01-12', '2023-02-01', 50.0, 'false', 1000.00);
-INSERT INTO PACKAGE (flight_id, hotel_id, package_start, package_end, package_discount, package_carRented, package_pricePP) VALUES (5, 5, '2023-01-08', '2023-02-01', 0.0, 'false', 500.00);
+INSERT INTO CAR_PICKUP (address_id, car_collection_date, car_return_date) VALUES (106, '2023-01-11', '2023-01-30');
+INSERT INTO CAR_PICKUP (address_id, car_collection_date, car_return_date) VALUES (107, '2023-01-10', '2023-01-30');
+
+INSERT INTO PACKAGE (flight_id, hotel_id, car_id, package_car_rented, package_discount, package_pricePP) VALUES (1, 1, null, 'false', 0.0, 200.00);
+INSERT INTO PACKAGE (flight_id, hotel_id, car_id, package_car_rented, package_discount, package_pricePP) VALUES (2, 2, 1, 'true', 20.0, 200.00);
+INSERT INTO PACKAGE (flight_id, hotel_id, car_id, package_car_rented, package_discount, package_pricePP) VALUES (3, 3, 2, 'true', 0.0, 1250.00);
+INSERT INTO PACKAGE (flight_id, hotel_id, car_id, package_car_rented, package_discount, package_pricePP) VALUES (4, 4, null, 'false', 50.0, 1000.00);
+INSERT INTO PACKAGE (flight_id, hotel_id, car_id, package_car_rented, package_discount, package_pricePP) VALUES (5, 5, null, 'false', 0.0, 500.00);
 
 INSERT INTO BRANCH (address_id, branch_name) VALUES (16, 'Sunnyside Cambridge');
 INSERT INTO BRANCH (address_id, branch_name) VALUES (17, 'Sunnyside Sunderland');
@@ -605,104 +621,104 @@ INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('Tax
 INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('Forensic Accountant', 6, 50000.00, null);
 INSERT INTO ROLE (role_name, dmpt_id, role_annualSalary, role_desc) VALUES ('Bookkeeping', 6, 50000.00, null);
 
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (19, 1, 1, 'password01', 'Li', 'Wang', '1987-01-20', '+44 7700 900685');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (20, 1, 2, 'password02', 'Wei', 'Li', '1987-02-21', '+44 7700 900051');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (21, 1, 3, 'password03', 'Fang', 'Zhang', '1987-03-22', '+44 7700 900154');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (22, 1, 4, 'password04', 'Wei', 'Cheung', '1987-04-23', '+44 7700 900565');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (23, 1, 5, 'password05', 'Xiuying', 'Teoh', '1987-05-24', '+44 7700 900807');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (24, 1, 6, 'password06', 'Xiuying', 'Chan', '1987-06-25', '+44 7700 900956');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (25, 1, 7, 'password07', 'Na', 'Yeung', '1987-07-26', '+44 7700 900398');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (26, 1, 8, 'password08', 'Xiuying', 'Wong', '1987-08-27', '+44 7700 900933');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (27, 1, 9, 'password09', 'Wei', 'Chiu', '1987-09-28', '+44 7700 900822');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (28, 1, 10, 'password10', 'Min', 'Ng', '1987-10-29', '+44 7700 900294');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (29, 1, 11, 'password11', 'Jing', 'Chow', '1987-11-01', '+44 7700 900798');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (30, 1, 12, 'password12', 'Li', 'Chao', '1987-12-02', '+44 7700 900723');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (31, 1, 13, 'password13', 'Qiang', 'Tsui', '1987-01-03', '+44 7700 900661');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (32, 1, 14, 'password14', 'Jing', 'Chu', '1987-02-04', '+44 7700 900044');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (33, 1, 15, 'password15', 'Min', 'Wu', '1987-03-05', '+44 7700 900477');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (34, 1, 16, 'password16', 'Min', 'Ho', '1987-04-06', '+44 7700 900752');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (35, 1, 17, 'password17', 'Lei', 'Lam', '1987-05-07', '+44 7700 900905');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (36, 1, 18, 'password18', 'Jun', 'Lo', '1987-06-08', '+44 7700 900529');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (37, 1, 19, 'password19', 'Yang', 'Zeng', '1987-07-09', '+44 7700 900220');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (38, 1, 20, 'password20', 'Yong', 'Ze', '1987-08-10', '+44 7700 900563');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (39, 1, 21, 'password21', 'Yong', 'Sung', '1987-09-11', '+44 7700 900464');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (40, 1, 22, 'password22', 'Yan', 'Dang', '1987-10-12', '+44 7700 900636');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (41, 1, 23, 'password23', 'Tao', 'Teng', '1987-11-13', '+44 7700 900588');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (42, 1, 24, 'password24', 'Ming', 'To', '1987-12-14', '+44 7700 900300');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (43, 1, 25, 'password25', 'Juan', 'Hai', '1987-01-15', '+44 7700 900513');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (44, 1, 26, 'password26', 'Jie', 'Kyo', '1987-02-16', '+44 7700 900665');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (45, 1, 27, 'password27', 'Xia', 'Deung', '1987-03-17', '+44 7700 900705');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (46, 1, 28, 'password28', 'Gang', 'To', '1987-04-18', '+44 7700 900932');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (47, 1, 29, 'password29', 'Ping', 'Tengco', '1987-05-19', '+44 7700 900472');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (48, 2, 1, 'password30', 'Asahi', 'Abe', '1975-01-15', '+44 7700 000001');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (49, 2, 2, 'password31', 'Haru', 'Abiko', '1975-02-16', '+44 7700 000002');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (50, 2, 3, 'password32', 'Akio', 'Abhuraya', '1975-03-17', '+44 7700 000003');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (51, 2, 4, 'password33', 'Haruto', 'Adachi', '1975-04-18', '+44 7700 000004');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (52, 2, 5, 'password34', 'Akira', 'Adachihara', '1975-05-19', '+44 7700 000005');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (53, 2, 6, 'password35', 'Hinata', 'Agawa', '1975-06-20', '+44 7700 000006');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (54, 2, 7, 'password36', 'Botan', 'Aguni', '1975-07-21', '+44 7700 000007');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (55, 2, 8, 'password37', 'Hiroto', 'Ahane', '1975-08-22', '+44 7700 000008');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (56, 2, 9, 'password38', 'Fuji', 'Aikawa', '1975-09-23', '+44 7700 000009');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (57, 2, 10, 'password39', 'Itsuki', 'Aoki', '1975-10-24', '+44 7700 000010');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (58, 2, 11, 'password40', 'Hiroshi', 'Aiuchi', '1975-11-25', '+44 7700 000011');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (59, 2, 12, 'password41', 'Kaito', 'Amamiya', '1975-12-26', '+44 7700 000012');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (60, 2, 13, 'password42', 'Jiro', 'Baba', '1975-01-27', '+44 7700 000013');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (61, 2, 14, 'password43', 'Minato', 'Bando', '1975-02-28', '+44 7700 000014');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (62, 2, 15, 'password44', 'Kenji', 'Bushida', '1975-03-29', '+44 7700 000015');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (63, 2, 16, 'password45', 'Ren', 'Chiba', '1975-04-01', '+44 7700 000016');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (64, 2, 17, 'password46', 'Kiyoshi', 'Chibana', '1975-05-02', '+44 7700 000017');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (65, 2, 18, 'password47', 'Riku', 'Chisaka', '1975-06-03', '+44 7700 000018');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (66, 2, 19, 'password48', 'Ichiro', 'Chinen', '1975-07-04', '+44 7700 000019');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (67, 2, 20, 'password49', 'Souta', 'Daguchi', '1975-08-05', '+44 7700 000020');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (68, 2, 21, 'password50', 'Aoki', 'Daigo', '1975-09-06', '+44 7700 000021');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (69, 2, 22, 'password51', 'Sana', 'Date', '1975-10-07', '+44 7700 000022');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (70, 2, 23, 'password52', 'Yuki', 'Matsumoto', '1997-03-13', '+44 7151 494259');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (71, 2, 24, 'password53', 'Sakura', 'Yamaguchi', '1998-02-14', '+44 7700 138011');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (72, 2, 25, 'password54', 'Makoto', 'Sasaki', '1999-01-15', '+44 7911 047351');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (73, 2, 26, 'password55', 'Mai', 'Yoshida', '2000-12-16', '+44 7457 109021');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (74, 2, 27, 'password56', 'Kenzo', 'Yamada', '1990-11-17', '+44 7502 267515');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (75, 2, 28, 'password57', 'Keiko', 'Kato', '1991-10-18', '+44 7568 960607');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (76, 2, 29, 'password58', 'Isamu', 'Yamamoto', '1992-09-19', '+44 7450 611544');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (77, 3, 1, 'password59', 'Hiroshi', 'Kobayashi', '1993-08-20', '+44 7700 065056');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (78, 3, 2, 'password60', 'Hiroko', 'Nakamura', '1994-07-21', '+44 7700 170737');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (79, 3, 3, 'password61', 'Hana', 'Ito', '1995-06-22', '+44 7527 941268');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (80, 3, 4, 'password62', 'Emiko', 'Watanabe', '1996-05-23', '+44 7700 081750');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (81, 3, 5, 'password63', 'Daiki', 'Tanaka', '1997-04-24', '+44 7700 050628');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (82, 3, 6, 'password64', 'Chiyo', 'Takahashi', '1998-03-25', '+44 7911 843679');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (83, 3, 7, 'password65', 'Asahi', 'Suzuki', '1999-02-26', '+44 7457 834101');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (84, 3, 8, 'password66', 'Ai', 'Sato', '2000-01-27', '+44 7457 188038');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (85, 3, 9, 'password67', 'Pheonix', 'Jung', '1994-09-30', '+44 7116 040128');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (86, 3, 10, 'password68', 'Benjamin', 'Yun', '1993-08-29', '+44 7911 071634');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (87, 3, 11, 'password69', 'Charlie', 'Cho', '1992-07-28', '+44 7911 868063');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (88, 3, 12, 'password70', 'Megan', 'Choi', '1991-06-27', '+44 7149 090892');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (89, 3, 13, 'password71', 'Lily', 'Kim', '1990-05-26', '+44 7130 561331');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (90, 3, 14, 'password72', 'Sophie', 'Sung', '1989-04-25', '+44 7438 379111');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (91, 3, 15, 'password73', 'Serina', 'Zhou', '1988-03-24', '+44 7911 087658');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (92, 3, 16, 'password74', 'Marcus', 'Wu', '1987-02-23', '+44 7457 535602');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (93, 3, 17, 'password75', 'Don', 'Zhao', '1986-01-22', '+44 7128 961695');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (94, 3, 18, 'password76', 'Chris', 'Huang', '1985-12-21', '+44 7251 078340');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (95, 3, 19, 'password77', 'Jack', 'Yang', '1984-11-20', '+44 7700 065368');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (96, 3, 20, 'password78', 'Oliver', 'Chen', '1983-10-19', '+44 7399 593441');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (97, 3, 21, 'password79', 'Robert', 'Liu', '1982-09-18', '+44 7455 273211');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (98, 3, 22, 'password80', 'Simon', 'Zhang', '1981-08-17', '+44 7700 106905');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (99, 3, 23, 'password81', 'Chase', 'Wang', '1980-07-16', '+44 7700 036784');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (100, 3, 24, 'password82', 'Ross', 'Bob', '1979-06-15', '+44 7530 564682');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (101, 3, 25, 'password83', 'Bob', 'Ross', '1978-05-14', '+44 7911 263170');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (102, 3, 26, 'password84', 'Dolly', 'Long', '1977-04-13', '+44 7700 035056');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (103, 3, 27, 'password85', 'Molly', 'Lee', '1976-03-12', '+44 7911 257623');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (104, 3, 28, 'password86', 'Johnny', 'Yip', '1975-02-11', '+44 7448 610099');
-INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (105, 3, 29, 'password87', 'Jimmy', 'Yany', '1974-01-10', '+44 7184 978346');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (19, 1, 1, 'password01', 'Li', 'Wang', '1987-01-20', '7700 900685');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (20, 1, 2, 'password02', 'Wei', 'Li', '1987-02-21', '7700 900051');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (21, 1, 3, 'password03', 'Fang', 'Zhang', '1987-03-22', '7700 900154');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (22, 1, 4, 'password04', 'Wei', 'Cheung', '1987-04-23', '7700 900565');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (23, 1, 5, 'password05', 'Xiuying', 'Teoh', '1987-05-24', '7700 900807');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (24, 1, 6, 'password06', 'Xiuying', 'Chan', '1987-06-25', '7700 900956');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (25, 1, 7, 'password07', 'Na', 'Yeung', '1987-07-26', '7700 900398');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (26, 1, 8, 'password08', 'Xiuying', 'Wong', '1987-08-27', '7700 900933');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (27, 1, 9, 'password09', 'Wei', 'Chiu', '1987-09-28', '7700 900822');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (28, 1, 10, 'password10', 'Min', 'Ng', '1987-10-29', '7700 900294');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (29, 1, 11, 'password11', 'Jing', 'Chow', '1987-11-01', '7700 900798');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (30, 1, 12, 'password12', 'Li', 'Chao', '1987-12-02', '7700 900723');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (31, 1, 13, 'password13', 'Qiang', 'Tsui', '1987-01-03', '7700 900661');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (32, 1, 14, 'password14', 'Jing', 'Chu', '1987-02-04', '7700 900044');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (33, 1, 15, 'password15', 'Min', 'Wu', '1987-03-05', '7700 900477');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (34, 1, 16, 'password16', 'Min', 'Ho', '1987-04-06', '7700 900752');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (35, 1, 17, 'password17', 'Lei', 'Lam', '1987-05-07', '7700 900905');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (36, 1, 18, 'password18', 'Jun', 'Lo', '1987-06-08', '7700 900529');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (37, 1, 19, 'password19', 'Yang', 'Zeng', '1987-07-09', '7700 900220');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (38, 1, 20, 'password20', 'Yong', 'Ze', '1987-08-10', '7700 900563');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (39, 1, 21, 'password21', 'Yong', 'Sung', '1987-09-11', '7700 900464');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (40, 1, 22, 'password22', 'Yan', 'Dang', '1987-10-12', '7700 900636');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (41, 1, 23, 'password23', 'Tao', 'Teng', '1987-11-13', '7700 900588');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (42, 1, 24, 'password24', 'Ming', 'To', '1987-12-14', '7700 900300');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (43, 1, 25, 'password25', 'Juan', 'Hai', '1987-01-15', '7700 900513');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (44, 1, 26, 'password26', 'Jie', 'Kyo', '1987-02-16', '7700 900665');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (45, 1, 27, 'password27', 'Xia', 'Deung', '1987-03-17', '7700 900705');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (46, 1, 28, 'password28', 'Gang', 'To', '1987-04-18', '7700 900932');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (47, 1, 29, 'password29', 'Ping', 'Tengco', '1987-05-19', '7700 900472');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (48, 2, 1, 'password30', 'Asahi', 'Abe', '1975-01-15', '7700 000001');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (49, 2, 2, 'password31', 'Haru', 'Abiko', '1975-02-16', '7700 000002');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (50, 2, 3, 'password32', 'Akio', 'Abhuraya', '1975-03-17', '7700 000003');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (51, 2, 4, 'password33', 'Haruto', 'Adachi', '1975-04-18', '7700 000004');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (52, 2, 5, 'password34', 'Akira', 'Adachihara', '1975-05-19', '7700 000005');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (53, 2, 6, 'password35', 'Hinata', 'Agawa', '1975-06-20', '7700 000006');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (54, 2, 7, 'password36', 'Botan', 'Aguni', '1975-07-21', '7700 000007');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (55, 2, 8, 'password37', 'Hiroto', 'Ahane', '1975-08-22', '7700 000008');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (56, 2, 9, 'password38', 'Fuji', 'Aikawa', '1975-09-23', '7700 000009');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (57, 2, 10, 'password39', 'Itsuki', 'Aoki', '1975-10-24', '7700 000010');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (58, 2, 11, 'password40', 'Hiroshi', 'Aiuchi', '1975-11-25', '7700 000011');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (59, 2, 12, 'password41', 'Kaito', 'Amamiya', '1975-12-26', '7700 000012');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (60, 2, 13, 'password42', 'Jiro', 'Baba', '1975-01-27', '7700 000013');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (61, 2, 14, 'password43', 'Minato', 'Bando', '1975-02-28', '7700 000014');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (62, 2, 15, 'password44', 'Kenji', 'Bushida', '1975-03-29', '7700 000015');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (63, 2, 16, 'password45', 'Ren', 'Chiba', '1975-04-01', '7700 000016');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (64, 2, 17, 'password46', 'Kiyoshi', 'Chibana', '1975-05-02', '7700 000017');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (65, 2, 18, 'password47', 'Riku', 'Chisaka', '1975-06-03', '7700 000018');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (66, 2, 19, 'password48', 'Ichiro', 'Chinen', '1975-07-04', '7700 000019');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (67, 2, 20, 'password49', 'Souta', 'Daguchi', '1975-08-05', '7700 000020');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (68, 2, 21, 'password50', 'Aoki', 'Daigo', '1975-09-06', '7700 000021');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (69, 2, 22, 'password51', 'Sana', 'Date', '1975-10-07', '7700 000022');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (70, 2, 23, 'password52', 'Yuki', 'Matsumoto', '1997-03-13', '7151 494259');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (71, 2, 24, 'password53', 'Sakura', 'Yamaguchi', '1998-02-14', '7700 138011');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (72, 2, 25, 'password54', 'Makoto', 'Sasaki', '1999-01-15', '7911 047351');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (73, 2, 26, 'password55', 'Mai', 'Yoshida', '2000-12-16', '7457 109021');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (74, 2, 27, 'password56', 'Kenzo', 'Yamada', '1990-11-17', '7502 267515');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (75, 2, 28, 'password57', 'Keiko', 'Kato', '1991-10-18', '7568 960607');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (76, 2, 29, 'password58', 'Isamu', 'Yamamoto', '1992-09-19', '7450 611544');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (77, 3, 1, 'password59', 'Hiroshi', 'Kobayashi', '1993-08-20', '7700 065056');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (78, 3, 2, 'password60', 'Hiroko', 'Nakamura', '1994-07-21', '7700 170737');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (79, 3, 3, 'password61', 'Hana', 'Ito', '1995-06-22', '7527 941268');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (80, 3, 4, 'password62', 'Emiko', 'Watanabe', '1996-05-23', '7700 081750');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (81, 3, 5, 'password63', 'Daiki', 'Tanaka', '1997-04-24', '7700 050628');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (82, 3, 6, 'password64', 'Chiyo', 'Takahashi', '1998-03-25', '7911 843679');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (83, 3, 7, 'password65', 'Asahi', 'Suzuki', '1999-02-26', '7457 834101');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (84, 3, 8, 'password66', 'Ai', 'Sato', '2000-01-27', '7457 188038');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (85, 3, 9, 'password67', 'Pheonix', 'Jung', '1994-09-30', '7116 040128');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (86, 3, 10, 'password68', 'Benjamin', 'Yun', '1993-08-29', '7911 071634');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (87, 3, 11, 'password69', 'Charlie', 'Cho', '1992-07-28', '7911 868063');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (88, 3, 12, 'password70', 'Megan', 'Choi', '1991-06-27', '7149 090892');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (89, 3, 13, 'password71', 'Lily', 'Kim', '1990-05-26', '7130 561331');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (90, 3, 14, 'password72', 'Sophie', 'Sung', '1989-04-25', '7438 379111');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (91, 3, 15, 'password73', 'Serina', 'Zhou', '1988-03-24', '7911 087658');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (92, 3, 16, 'password74', 'Marcus', 'Wu', '1987-02-23', '7457 535602');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (93, 3, 17, 'password75', 'Don', 'Zhao', '1986-01-22', '7128 961695');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (94, 3, 18, 'password76', 'Chris', 'Huang', '1985-12-21', '7251 078340');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (95, 3, 19, 'password77', 'Jack', 'Yang', '1984-11-20', '7700 065368');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (96, 3, 20, 'password78', 'Oliver', 'Chen', '1983-10-19', '7399 593441');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (97, 3, 21, 'password79', 'Robert', 'Liu', '1982-09-18', '7455 273211');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (98, 3, 22, 'password80', 'Simon', 'Zhang', '1981-08-17', '7700 106905');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (99, 3, 23, 'password81', 'Chase', 'Wang', '1980-07-16', '7700 036784');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (100, 3, 24, 'password82', 'Ross', 'Bob', '1979-06-15', '7530 564682');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (101, 3, 25, 'password83', 'Bob', 'Ross', '1978-05-14', '7911 263170');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (102, 3, 26, 'password84', 'Dolly', 'Long', '1977-04-13', '7700 035056');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (103, 3, 27, 'password85', 'Molly', 'Lee', '1976-03-12', '7911 257623');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (104, 3, 28, 'password86', 'Johnny', 'Yip', '1975-02-11', '7448 610099');
+INSERT INTO EMPLOYEE (address_id, branch_id, role_id, emp_password, emp_fname, emp_lname, emp_dob, emp_phoneNum) VALUES (105, 3, 29, 'password87', 'Jimmy', 'Yany', '1974-01-10', '7184 978346');
 
-INSERT INTO BOOKING (cust_id, package_id) VALUES (1, 1);
-INSERT INTO BOOKING (cust_id, package_id) VALUES (2, 2);
-INSERT INTO BOOKING (cust_id, package_id) VALUES (3, 3);
-INSERT INTO BOOKING (cust_id, package_id) VALUES (4, 4);
-INSERT INTO BOOKING (cust_id, package_id) VALUES (5, 5);
-INSERT INTO BOOKING (cust_id, package_id) VALUES (6, 1);
-INSERT INTO BOOKING (cust_id, package_id) VALUES (7, 3);
-INSERT INTO BOOKING (cust_id, package_id) VALUES (8, 3);
-INSERT INTO BOOKING (cust_id, package_id) VALUES (9, 4);
-INSERT INTO BOOKING (cust_id, package_id) VALUES (10, 5);
+INSERT INTO BOOKING (cust_id, package_id, booking_start, booking_end) VALUES (1, 1, '2023-01-11', '2023-02-01');
+INSERT INTO BOOKING (cust_id, package_id, booking_start, booking_end) VALUES (2, 2, '2023-01-10', '2023-02-01');
+INSERT INTO BOOKING (cust_id, package_id, booking_start, booking_end) VALUES (3, 3, '2023-01-09', '2023-02-01');
+INSERT INTO BOOKING (cust_id, package_id, booking_start, booking_end) VALUES (4, 4, '2023-01-12', '2023-02-01');
+INSERT INTO BOOKING (cust_id, package_id, booking_start, booking_end) VALUES (5, 5, '2023-01-08', '2023-02-01');
+INSERT INTO BOOKING (cust_id, package_id, booking_start, booking_end) VALUES (6, 1, '2023-01-11', '2023-02-01');
+INSERT INTO BOOKING (cust_id, package_id, booking_start, booking_end) VALUES (7, 3, '2023-01-10', '2023-02-01');
+INSERT INTO BOOKING (cust_id, package_id, booking_start, booking_end) VALUES (8, 3, '2023-01-09', '2023-02-01');
+INSERT INTO BOOKING (cust_id, package_id, booking_start, booking_end) VALUES (9, 4, '2023-01-12', '2023-02-01');
+INSERT INTO BOOKING (cust_id, package_id, booking_start, booking_end) VALUES (10, 5, '2023-01-08', '2023-02-01');
 
 INSERT INTO TRAVELLERS (booking_id, traveller_fname, traveller_lname, traveller_dob) VALUES (1, 'James', 'Smith', '1984-01-10');
 INSERT INTO TRAVELLERS (booking_id, traveller_fname, traveller_lname, traveller_dob) VALUES (2, 'Micheal', 'Lee', '1983-02-11');
@@ -1283,24 +1299,25 @@ SELECT
   (
     SELECT 
       CONCAT(c.cust_email, ' | ', c.cust_phoneNum) 
-    FROM CUSTOMER c
-    WHERE c.cust_id = b.cust_id) AS "Customer Contacts",
+    FROM CUSTOMER c 
+    WHERE c.cust_id = b.cust_id
+  ) AS "Customer Contacts",
   b.package_id AS "Package Number",
-  CONCAT(p.package_start, ' - ', p.package_end) AS "Package Time Frame",
+  CONCAT(b.booking_start, ' - ', b.booking_end) AS "Booking Duration",
   (
-    SELECT
-      CONCAT(f.flight_date, ' at ', f.flight_boarding, ' - ', f.flight_locationStart, ' to ', f.flight_locationEnd)
+    SELECT 
+      CONCAT(f.flight_location_from, ' to ', f.flight_location_to, ' Arrival:(', f.flight_date_start, ' - ', f.flight_boarding_start, ') Return:(', f.flight_date_end, ' - ', f.flight_boarding_end, ')')
     FROM FLIGHT f
     WHERE f.flight_id = p.flight_id
-  ) AS "Flight Information",
+  ) AS "Flight Details",
   (
-  SELECT 
-    h.hotel_name 
-  FROM HOTEL h
-  WHERE h.hotel_id = p.hotel_id
+    SELECT
+      h.hotel_name
+    FROM HOTEL h
+    WHERE h.hotel_id = p.hotel_id
   ) AS "Hotel"
 FROM BOOKING b
-INNER JOIN PACKAGE p ON b.package_id = p.package_id
+INNER JOIN PACKAGE p USING (package_id)
 WHERE b.booking_id = 3;
 
 -- QUERY 3: The query gives all employee information for a specific branch that a manager may need to access to find employee phone numbers or look at gaps in the workforce.
@@ -1363,20 +1380,27 @@ GROUP BY
 
 SELECT
   p.package_id AS "Package ID",
-  CONCAT(p.package_start, ' - ', p.package_end) AS "Package Duration",
   CASE
-    WHEN p.package_carRented THEN 'Yes'
-    ELSE 'No'
+    WHEN p.package_car_rented THEN 
+    (
+      SELECT
+        CONCAT('Collection:(', car.car_collection_date, ') Return:(', car.car_return_date, ')', ' At:(', a.address_city,', ', a.address_postcode,')')
+      FROM CAR_PICKUP car
+      INNER JOIN ADDRESS a USING (address_id)
+      WHERE car.car_id = p.car_id
+    )
+    ELSE 'null'
   END AS "With Car",
   CONCAT('£', ROUND(p.package_pricePP * (1 - (p.package_discount / 100)), 2)) AS "Current Price Per Person",
-  CONCAT(h.hotel_name, ' - ', a.address_city, ' - ', a.address_postcode) AS "Hotel",
-  CONCAT(f.flight_locationStart, ' to ', f.flight_locationEnd) AS "Flight",
-  CONCAT(f.flight_date, ' at ', f.flight_boarding) AS "Flight Time"
+  CONCAT(h.hotel_name, ' - ', addr.address_city, ' - ', addr.address_postcode) AS "Hotel",
+  CONCAT(f.flight_location_from, ' to ', f.flight_location_to) AS "Flight",
+  CONCAT(f.flight_date_start, ' at ', f.flight_boarding_start) AS "Flight Arrival Time",
+  CONCAT(f.flight_date_end, ' at ', f.flight_boarding_end) AS "Flight Departure Time"
 FROM PACKAGE p
 INNER JOIN HOTEL h USING (hotel_id)
+INNER JOIN ADDRESS addr USING (address_id)
 INNER JOIN FLIGHT f USING (flight_id)
-INNER JOIN ADDRESS a USING (address_id)
-WHERE p.package_id = 5;
+WHERE p.package_id = 3;
 
 /*--------------------------*/
 /*----------VIEWS-----------*/
