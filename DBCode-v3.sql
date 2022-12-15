@@ -246,18 +246,18 @@ CREATE OR REPLACE FUNCTION set_payment_after_booking_insert()
   RETURNS TRIGGER
   LANGUAGE PLPGSQL
 AS 
-$$
+$BODY$
 BEGIN
   INSERT INTO PAYMENT(booking_id, payment_status, payment_totalPrice, payment_amountPaid) VALUES (NEW.booking_id, 'FALSE', null, null);
   RETURN NEW;
 END;
-$$;
+$BODY$;
 
 CREATE OR REPLACE FUNCTION update_payment_after_travellers_insert()
   RETURNS TRIGGER
   LANGUAGE PLPGSQL
 AS
-$$
+$BODY$
 DECLARE
   numberOfTravellers INT;
   pricePerPerson DECIMAL(6, 2);
@@ -274,13 +274,13 @@ BEGIN
   UPDATE PAYMENT SET payment_totalPrice = numberOfTravellers * pricePerPerson WHERE PAYMENT.booking_id = NEW.booking_id;
   RETURN NEW;
 END;
-$$;
+$BODY$;
 
 CREATE OR REPLACE FUNCTION update_amountPaid_after_instalments_insert()
   RETURNS TRIGGER
   LANGUAGE PLPGSQL
 AS 
-$$
+$BODY$
 DECLARE
   oldAmountPaid DECIMAL(6, 2);
   newAmountPaid DECIMAL(6, 2);
@@ -299,7 +299,25 @@ BEGIN
 
   RETURN NEW;
 END;
-$$;
+$BODY$;
+
+
+/*--------------------------*/
+/*--------PROCEDURES--------*/
+/*--------------------------*/
+
+CREATE OR REPLACE PROCEDURE set_user_password(p_user VARCHAR(32), p_emp_id INT, p_input VARCHAR(100))
+LANGUAGE PLPGSQL
+AS 
+$BODY$
+BEGIN 
+    CASE WHEN LENGTH(p_input) > 8 AND p_input ILIKE '^[0-9\.]+$' THEN 
+      ALTER USER p_user WITH ENCRYPTED PASSWORD p_input;
+      UPDATE EMPLOYEE SET emp_password = p_input WHERE emp_id = p_emp_id; -- Try EXECUTE format()
+    ELSE NULL;
+    END CASE;
+END;
+$BODY$;
 
 /*--------------------------*/
 /*---------TRIGGERS---------*/
@@ -698,220 +716,6 @@ INSERT INTO INSTALMENTS (payment_id, instalments_number, instalments_amountPaid)
 INSERT INTO INSTALMENTS (payment_id, instalments_number, instalments_amountPaid) VALUES (9, 1, 1000);
 INSERT INTO INSTALMENTS (payment_id, instalments_number, instalments_amountPaid) VALUES (10, 1, 100);
 
-/*--------------------------*/
-/*---------QUERIES----------*/
-/*--------------------------*/
-
--- QUERY 1: This shows the best performing package for the entire lifetime of the company. 
---          This is helpful to sales since they can know what package is the most likely to sell when pitched to a customer.
-
-SELECT
-  b.package_id AS "Package Number",
-  COUNT(b.package_id) AS "Most Popular Package"
-FROM BOOKING b
-GROUP BY b.package_id
-ORDER BY "Most Popular Package" DESC
-LIMIT 1;
-
--- QUERY 2: The query shows key details about a specific booking. For instance package time frame along with flight and hotel information. 
---          This can be used for when a customer has placed an order on a holiday and needs to be reminded of key details.
-
-SELECT
-  (
-    SELECT 
-      CONCAT(c.cust_email, ' | ', c.cust_phoneNum) 
-    FROM CUSTOMER c
-    WHERE c.cust_id = b.cust_id) AS "Customer Contacts",
-  b.package_id AS "Package Number",
-  CONCAT(p.package_start, ' - ', p.package_end) AS "Package Time Frame",
-  (
-    SELECT
-      CONCAT(f.flight_date, ' at ', f.flight_boarding, ' - ', f.flight_locationStart, ' to ', f.flight_locationEnd)
-    FROM FLIGHT f
-    WHERE f.flight_id = p.flight_id
-  ) AS "Flight Information",
-  (
-  SELECT 
-    h.hotel_name 
-  FROM HOTEL h
-  WHERE h.hotel_id = p.hotel_id
-  ) AS "Hotel"
-FROM BOOKING b
-INNER JOIN PACKAGE p ON b.package_id = p.package_id
-WHERE b.booking_id = 3;
-
--- QUERY 3: The query gives all employee information for a specific branch that a manager may need to access to find employee phone numbers or look at gaps in the workforce.
-
-SELECT
-  d.dmpt_name AS "Department",
-  CONCAT(e.emp_fname, ' ', e.emp_lname) AS "Employee",
-  r.role_name AS "Role",
-  CONCAT(e.emp_id, '@', d.dmpt_emailSuffix) AS "Email Address",
-  e.emp_phoneNum AS "Phone"
-FROM EMPLOYEE e
-INNER JOIN ROLE r USING (role_id)
-INNER JOIN DEPARTMENT d USING (dmpt_id)
-WHERE e.branch_id = (
-  SELECT 
-    b.branch_id 
-  FROM BRANCH b 
-  WHERE b.branch_name = 'Sunnyside Cambridge'
-)
-ORDER BY d.dmpt_name, e.emp_lname ASC;
-
--- QUERY 4: Package payment status, 
---          this query gives a way for the accounting and finance team of the company to monitor customer payments for a specific booking showing total price for that booking, current amount paid, amount remaining and the history of their payments.
-
-SELECT
-  CONCAT(cust.cust_email, ' | ', cust.cust_phoneNum) AS "Customer Contacts",
-  b.booking_id AS "Booking ID",
-  p.payment_id AS "Payment ID",
-  (
-    SELECT 
-      COUNT(*) 
-    FROM TRAVELLERS t 
-    WHERE t.booking_id = b.booking_id
-  ) AS "Number of Travellers",
-  CONCAT('£', p.payment_totalPrice) AS "Total Price",
-  CONCAT('£', p.payment_amountPaid) AS "Amount Paid",
-  CASE
-    WHEN p.payment_totalPrice - p.payment_amountPaid < 0 THEN 'N/A'
-    ELSE CONCAT('£', p.payment_totalPrice - p.payment_amountPaid)
-  END AS "Remaining",
-  ARRAY_TO_STRING(
-    ARRAY_AGG(
-      CONCAT('Instalment-', i.instalments_number, ': ', '£', i.instalments_amountPaid)
-    ), ', '
-  ) AS "Payment History"
-FROM BOOKING b
-INNER JOIN CUSTOMER cust USING (cust_id)
-INNER JOIN PAYMENT p USING (booking_id)
-INNER JOIN INSTALMENTS i USING (payment_id)
-WHERE cust.cust_email = 'robertmicheals@gmail.com'
-GROUP BY 
-  cust.cust_email, 
-  cust.cust_phoneNum,
-  b.booking_id,
-  p.payment_id;
-
-
--- QUERY 5: For the final query it shows details about a specific package with key details such as cost, destination and time of leaving. 
---          This can help sales give accurate information to make sure the customer is well informed.
-
-SELECT
-  p.package_id AS "Package ID",
-  CONCAT(p.package_start, ' - ', p.package_end) AS "Package Duration",
-  CASE
-    WHEN p.package_carRented THEN 'Yes'
-    ELSE 'No'
-  END AS "With Car",
-  CONCAT('£', ROUND(p.package_pricePP * (1 - (p.package_discount / 100)), 2)) AS "Current Price Per Person",
-  CONCAT(h.hotel_name, ' - ', a.address_city, ' - ', a.address_postcode) AS "Hotel",
-  CONCAT(f.flight_locationStart, ' to ', f.flight_locationEnd) AS "Flight",
-  CONCAT(f.flight_date, ' at ', f.flight_boarding) AS "Flight Time"
-FROM PACKAGE p
-INNER JOIN HOTEL h USING (hotel_id)
-INNER JOIN FLIGHT f USING (flight_id)
-INNER JOIN ADDRESS a USING (address_id)
-WHERE p.package_id = 5;
-
-/*--------------------------*/
-/*----------VIEWS-----------*/
-/*--------------------------*/
-
--- View for Query 1
-CREATE VIEW best_package AS
-SELECT  b.package_id        AS "Package Number",
-        COUNT(b.package_id) AS "Most Popular Package"
-FROM BOOKING b
-GROUP BY  b.package_id
-ORDER BY "Most Popular Package" DESC
-LIMIT 1;
-
--- View for Query 2
-CREATE VIEW booking_details AS
-SELECT  (
-          SELECT  CONCAT(c.cust_email,' | ',c.cust_phoneNum)
-          FROM CUSTOMER c
-          WHERE c.cust_id = b.cust_id
-        )                                             AS "Customer Contacts", 
-        b.package_id                                  AS "Package Number", 
-        CONCAT(p.package_start, ' - ', p.package_end) AS "Package Time Frame", 
-        (
-          SELECT  CONCAT(f.flight_date,' at ',f.flight_boarding,' - ',f.flight_locationStart,' to ',f.flight_locationEnd)
-          FROM FLIGHT f
-          WHERE f.flight_id = p.flight_id 
-        )                                             AS "Flight Information", 
-        (
-          SELECT  h.hotel_name
-          FROM HOTEL h
-          WHERE h.hotel_id = p.hotel_id 
-        )                                             AS "Hotel"
-FROM BOOKING b
-INNER JOIN PACKAGE p ON b.package_id = p.package_id
-WHERE b.booking_id = 3; 
-
--- View for Query 3
-CREATE VIEW cbg_employee_info AS
-SELECT  d.dmpt_name                             AS "Department",
-        CONCAT(e.emp_fname,' ',e.emp_lname)     AS "Employee",
-        r.role_name                             AS "Role",
-        CONCAT(e.emp_id,'@',d.dmpt_emailSuffix) AS "Email Address",
-        e.emp_phoneNum                          AS "Phone"
-FROM EMPLOYEE e
-INNER JOIN ROLE r USING (role_id)
-INNER JOIN DEPARTMENT d USING (dmpt_id)
-WHERE e.branch_id = (
-  SELECT  b.branch_id
-  FROM BRANCH b
-  WHERE b.branch_name = 'Sunnyside Cambridge' 
-)
-ORDER BY d.dmpt_name, e.emp_lname ASC;
-
--- View for Query 4
-CREATE VIEW package_payment_status AS
-SELECT  CONCAT(cust.cust_email,' | ',cust.cust_phoneNum)                                                                       AS "Customer Contacts",
-        b.booking_id                                                                                                           AS "Booking ID",
-        p.payment_id                                                                                                           AS "Payment ID",
-        (
-          SELECT  COUNT(*)
-          FROM TRAVELLERS t
-          WHERE t.booking_id = b.booking_id 
-        )                                                                                                                      AS "Number of Travellers", 
-        CONCAT('£', p.payment_totalPrice)                                                                                      AS "Total Price",
-        CONCAT('£', p.payment_amountPaid)                                                                                      AS "Amount Paid",
-        CASE 
-          WHEN p.payment_totalPrice - p.payment_amountPaid < 0 THEN 'N/A' 
-          ELSE CONCAT('£', p.payment_totalPrice - p.payment_amountPaid) 
-        END                                                                                                                    AS "Remaining", 
-        ARRAY_TO_STRING( ARRAY_AGG( CONCAT('Instalment-', i.instalments_number, ': ', '£', i.instalments_amountPaid) ), ', ' ) AS "Payment History"
-FROM BOOKING b
-INNER JOIN CUSTOMER cust USING (cust_id)
-INNER JOIN PAYMENT p USING (booking_id)
-INNER JOIN INSTALMENTS i USING (payment_id)
-WHERE cust.cust_email = 'robertmicheals@gmail.com'
-GROUP BY  cust.cust_email,
-          cust.cust_phoneNum,
-          b.booking_id,
-          p.payment_id;
-
--- View for Query 5
-CREATE VIEW package_details AS
-SELECT  p.package_id                                                              AS "Package ID",
-        CONCAT(p.package_start,' - ',p.package_end)                               AS "Package Duration",
-        CASE 
-          WHEN p.package_carRented THEN 'Yes'  
-          ELSE 'No' 
-        END                                                                       AS "With Car",
-        CONCAT('£',ROUND(p.package_pricePP * (1 - (p.package_discount / 100)),2)) AS "Current Price Per Person",
-        CONCAT(h.hotel_name,' - ',a.address_city,' - ',a.address_postcode)        AS "Hotel",
-        CONCAT(f.flight_locationStart,' to ',f.flight_locationEnd)                AS "Flight",
-        CONCAT(f.flight_date,' at ',f.flight_boarding)                            AS "Flight Time"
-FROM PACKAGE p
-INNER JOIN HOTEL h USING (hotel_id)
-INNER JOIN FLIGHT f USING (flight_id)
-INNER JOIN ADDRESS a USING (address_id)
-WHERE p.package_id = 5;
 
 /*--------------------------*/
 /*-----------ROLES----------*/
@@ -1251,6 +1055,399 @@ GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH TO accountfinance_employees;
 GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH_PACKAGE TO accountfinance_employees;
 
 
+-- Users
+
+CREATE USER lwang01 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password01' IN ROLE admin_managers;
+CREATE DATABASE lwang01 OWNER lwang01;
+CREATE USER wli02 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password02' IN ROLE admin_managers;
+CREATE DATABASE wli02 OWNER wli02;
+CREATE USER fzhang03 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password03' IN ROLE admin_managers;
+CREATE DATABASE fzhang03 OWNER fzhang03;
+CREATE USER wcheung04 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password04' IN ROLE admin_employees;
+CREATE DATABASE wcheung04 OWNER wcheung04;
+CREATE USER xteoh05 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password05' IN ROLE resdev_managers;
+CREATE DATABASE xteoh05 OWNER xteoh05;
+CREATE USER xchan06 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password06' IN ROLE resdev_managers;
+CREATE DATABASE xchan06 OWNER xchan06;
+CREATE USER nyeung07 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password07' IN ROLE resdev_managers;
+CREATE DATABASE nyeung07 OWNER nyeung07;
+CREATE USER xwong8 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password08' IN ROLE resdev_employees;
+CREATE DATABASE xwong08 OWNER xwong08;
+CREATE USER wchiu09 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password09' IN ROLE resdev_employees;
+CREATE DATABASE wchiu09 OWNER wchiu09;
+CREATE USER mng10 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password10' IN ROLE marketingsales_managers;
+CREATE DATABASE mng10 OWNER mng10;
+CREATE USER jchow11 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password11' IN ROLE marketingsales_managers;
+CREATE DATABASE jchow11 OWNER jchow11;
+CREATE USER lchao12 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password12' IN ROLE marketingsales_managers;
+CREATE DATABASE lchao12 OWNER lchao12;
+CREATE USER qtsui13 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password13' IN ROLE marketingsales_managers;
+CREATE DATABASE qtsui13 OWNER qtsui13;
+CREATE USER jchu14 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password14' IN ROLE marketingsales_employees;
+CREATE DATABASE jchu14 OWNER jchu14;
+CREATE USER mwu15 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password15' IN ROLE marketingsales_managers;
+CREATE DATABASE mwu15 OWNER mwu15;
+CREATE USER mho16 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password16' IN ROLE marketingsales_employees;
+CREATE DATABASE mho16 OWNER mho16;
+CREATE USER llam17 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password17' IN ROLE marketingsales_employees;
+CREATE DATABASE llam17 OWNER llam17;
+CREATE USER jlo18 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password18' IN ROLE marketingsales_employees;
+CREATE DATABASE jlo18 OWNER jlo18;
+CREATE USER yzeng19 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password19' IN ROLE hr_managers;
+CREATE DATABASE yzeng19 OWNER yzeng19;
+CREATE USER yze20 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password20' IN ROLE hr_managers;
+CREATE DATABASE yze20 OWNER yze20;
+CREATE USER ysung21 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password21' IN ROLE hr_employees;
+CREATE DATABASE ysung21 OWNER ysung21;
+CREATE USER ydang22 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password22' IN ROLE custservice_managers;
+CREATE DATABASE ydang22 OWNER ydang22;
+CREATE USER tteng23 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password23' IN ROLE custservice_managers;
+CREATE DATABASE tteng23 OWNER tteng23;
+CREATE USER mto24 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password24' IN ROLE custservice_employees;
+CREATE DATABASE mto24 OWNER mto24;
+CREATE USER jhai25 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password25' IN ROLE custservice_employees;
+CREATE DATABASE jhai25 OWNER jhai25;
+CREATE USER jkyo26 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password26' IN ROLE accountfinance_managers;
+CREATE DATABASE jkyo26 OWNER jkyo26;
+CREATE USER xdeung27 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password27' IN ROLE accountfinance_managers;
+CREATE DATABASE xdeung27 OWNER xdeung27;
+CREATE USER gto28 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password28' IN ROLE accountfinance_employees;
+CREATE DATABASE gto28 OWNER gto28;
+CREATE USER ptengco29 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password29' IN ROLE accountfinance_employees;
+CREATE DATABASE ptengco29 OWNER ptengco29;
+CREATE USER aabe30 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password30' IN ROLE admin_managers;
+CREATE DATABASE aabe30 OWNER aabe30;
+CREATE USER habiko31 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password31' IN ROLE admin_managers;
+CREATE DATABASE habiko31 OWNER habiko31;
+CREATE USER aabhuraya32 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password32' IN ROLE admin_managers;
+CREATE DATABASE aabhuraya32 OWNER aabhuraya32;
+CREATE USER hadachi33 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password33' IN ROLE admin_employees;
+CREATE DATABASE hadachi33 OWNER hadachi33;
+CREATE USER aadachihara34 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password34' IN ROLE resdev_managers;
+CREATE DATABASE aadachihara34 OWNER aadachihara34;
+CREATE USER hagawa35 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password35' IN ROLE resdev_managers;
+CREATE DATABASE hagawa35 OWNER hagawa35;
+CREATE USER baguni36 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password36' IN ROLE resdev_managers;
+CREATE DATABASE baguni36 OWNER baguni36;
+CREATE USER hahane37 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password37' IN ROLE resdev_employees;
+CREATE DATABASE hahane37 OWNER hahane37;
+CREATE USER faikawa38 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password38' IN ROLE resdev_employees;
+CREATE DATABASE faikawa38 OWNER faikawa38;
+CREATE USER iaoki39 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password39' IN ROLE marketingsales_managers;
+CREATE DATABASE iaoki39 OWNER iaoki39;
+CREATE USER haiuchi40 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password40' IN ROLE marketingsales_managers;
+CREATE DATABASE haiuchi40 OWNER haiuchi40;
+CREATE USER kamamiya41 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password41' IN ROLE marketingsales_managers;
+CREATE DATABASE kamamiya41 OWNER kamamiya41;
+CREATE USER jbaba42 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password42' IN ROLE marketingsales_managers;
+CREATE DATABASE jbaba42 OWNER jbaba42;
+CREATE USER mbando43 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password43' IN ROLE marketingsales_employees;
+CREATE DATABASE mbando43 OWNER mbando43;
+CREATE USER kbushida44 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password44' IN ROLE marketingsales_managers;
+CREATE DATABASE kbushida44 OWNER kbushida44;
+CREATE USER rchiba45 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password45' IN ROLE marketingsales_employees;
+CREATE DATABASE rchiba45 OWNER rchiba45;
+CREATE USER kchibana46 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password46' IN ROLE marketingsales_employees;
+CREATE DATABASE kchibana46 OWNER kchibana46;
+CREATE USER rchisaka47 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password47' IN ROLE marketingsales_employees;
+CREATE DATABASE rchisaka47 OWNER rchisaka47;
+CREATE USER ichinen48 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password48' IN ROLE hr_managers;
+CREATE DATABASE ichinen48 OWNER ichinen48;
+CREATE USER sdaguchi49 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password49' IN ROLE hr_managers;
+CREATE DATABASE sdaguchi49 OWNER sdaguchi49;
+CREATE USER adaigo50 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password50' IN ROLE hr_employees;
+CREATE DATABASE adaigo50 OWNER adaigo50;
+CREATE USER sdate51 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password51' IN ROLE custservice_managers;
+CREATE DATABASE sdate51 OWNER sdate51;
+CREATE USER ymatsumoto52 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password52' IN ROLE custservice_managers;
+CREATE DATABASE ymatsumoto52 OWNER ymatsumoto52;
+CREATE USER syamaguchi53 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password53' IN ROLE custservice_employees;
+CREATE DATABASE syamaguchi53 OWNER syamaguchi53;
+CREATE USER msasaki54 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password54' IN ROLE custservice_employees;
+CREATE DATABASE msasaki54 OWNER msasaki54;
+CREATE USER myoshida55 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password55' IN ROLE accountfinance_managers;
+CREATE DATABASE myoshida55 OWNER myoshida55;
+CREATE USER kyamada56 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password56' IN ROLE accountfinance_managers;
+CREATE DATABASE kyamada56 OWNER kyamada56;
+CREATE USER kkato57 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password57' IN ROLE accountfinance_employees;
+CREATE DATABASE kkato57 OWNER kkato57;
+CREATE USER iyamamoto58 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password58' IN ROLE accountfinance_employees;
+CREATE DATABASE iyamamoto58 OWNER iyamamoto58;
+CREATE USER hkobayashi59 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password59' IN ROLE admin_managers;
+CREATE DATABASE hkobayashi59 OWNER hkobayashi59;
+CREATE USER hnakamura60 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password60' IN ROLE admin_managers;
+CREATE DATABASE hnakamura60 OWNER hnakamura60;
+CREATE USER hito61 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password61' IN ROLE admin_managers;
+CREATE DATABASE hito61 OWNER hito61;
+CREATE USER ewatanabe62 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password62' IN ROLE admin_employees;
+CREATE DATABASE ewatanabe62 OWNER ewatanabe62;
+CREATE USER dtanaka63 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password63' IN ROLE resdev_managers;
+CREATE DATABASE dtanaka63 OWNER dtanaka63;
+CREATE USER ctakahashi64 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password64' IN ROLE resdev_managers;
+CREATE DATABASE ctakahashi64 OWNER ctakahashi64;
+CREATE USER asuzuki65 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password65' IN ROLE resdev_managers;
+CREATE DATABASE asuzuki65 OWNER asuzuki65;
+CREATE USER asato66 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password66' IN ROLE resdev_employees;
+CREATE DATABASE asato66 OWNER asato66;
+CREATE USER pjung67 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password67' IN ROLE resdev_employees;
+CREATE DATABASE pjung67 OWNER pjung67;
+CREATE USER byun68 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password68' IN ROLE marketingsales_managers;
+CREATE DATABASE byun68 OWNER byun68;
+CREATE USER ccho69 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password69' IN ROLE marketingsales_managers;
+CREATE DATABASE ccho69 OWNER ccho69;
+CREATE USER mchoi70 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password70' IN ROLE marketingsales_managers;
+CREATE DATABASE mchoi70 OWNER mchoi70;
+CREATE USER lkim71 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password71' IN ROLE marketingsales_managers;
+CREATE DATABASE lkim71 OWNER lkim71;
+CREATE USER ssung72 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password72' IN ROLE marketingsales_employees;
+CREATE DATABASE ssung72 OWNER ssung72;
+CREATE USER szhou73 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password73' IN ROLE marketingsales_managers;
+CREATE DATABASE szhou73 OWNER szhou73;
+CREATE USER mwu74 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password74' IN ROLE marketingsales_employees;
+CREATE DATABASE mwu74 OWNER mwu74;
+CREATE USER dzhao75 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password75' IN ROLE marketingsales_employees;
+CREATE DATABASE dzhao75 OWNER dzhao75;
+CREATE USER chuang76 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password76' IN ROLE marketingsales_employees;
+CREATE DATABASE chuang76 OWNER chuang76;
+CREATE USER jyang77 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password77' IN ROLE hr_managers;
+CREATE DATABASE jyang77 OWNER jyang77;
+CREATE USER ochen78 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password78' IN ROLE hr_managers;
+CREATE DATABASE ochen78 OWNER ochen78;
+CREATE USER rliu79 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password79' IN ROLE hr_employees;
+CREATE DATABASE rliu79 OWNER rliu79;
+CREATE USER szhang80 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password80' IN ROLE custservice_managers;
+CREATE DATABASE szhang80 OWNER szhang80;
+CREATE USER cwang81 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password81' IN ROLE custservice_managers;
+CREATE DATABASE cwang81 OWNER cwang81;
+CREATE USER rbob82 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password82' IN ROLE custservice_employees;
+CREATE DATABASE rbob82 OWNER rbob82;
+CREATE USER bross83 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password83' IN ROLE custservice_employees;
+CREATE DATABASE bross83 OWNER bross83;
+CREATE USER dlong84 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password84' IN ROLE accountfinance_managers;
+CREATE DATABASE dlong84 OWNER dlong84;
+CREATE USER mlee85 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password85' IN ROLE accountfinance_managers;
+CREATE DATABASE mlee85 OWNER mlee85;
+CREATE USER jyip86 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password86' IN ROLE accountfinance_employees;
+CREATE DATABASE jyip86 OWNER jyip86;
+CREATE USER jyany87 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS ENCRYPTED PASSWORD 'password87' IN ROLE accountfinance_employees;
+CREATE DATABASE jyany87 OWNER jyany87;
+
+/*--------------------------*/
+/*---------QUERIES----------*/
+/*--------------------------*/
+
+-- QUERY 1: This shows the best performing package for the entire lifetime of the company. 
+--          This is helpful to sales since they can know what package is the most likely to sell when pitched to a customer.
+
+SELECT
+  b.package_id AS "Package Number",
+  COUNT(b.package_id) AS "Most Popular Package"
+FROM BOOKING b
+GROUP BY b.package_id
+ORDER BY "Most Popular Package" DESC
+LIMIT 1;
+
+-- QUERY 2: The query shows key details about a specific booking. For instance package time frame along with flight and hotel information. 
+--          This can be used for when a customer has placed an order on a holiday and needs to be reminded of key details.
+
+SELECT
+  (
+    SELECT 
+      CONCAT(c.cust_email, ' | ', c.cust_phoneNum) 
+    FROM CUSTOMER c
+    WHERE c.cust_id = b.cust_id) AS "Customer Contacts",
+  b.package_id AS "Package Number",
+  CONCAT(p.package_start, ' - ', p.package_end) AS "Package Time Frame",
+  (
+    SELECT
+      CONCAT(f.flight_date, ' at ', f.flight_boarding, ' - ', f.flight_locationStart, ' to ', f.flight_locationEnd)
+    FROM FLIGHT f
+    WHERE f.flight_id = p.flight_id
+  ) AS "Flight Information",
+  (
+  SELECT 
+    h.hotel_name 
+  FROM HOTEL h
+  WHERE h.hotel_id = p.hotel_id
+  ) AS "Hotel"
+FROM BOOKING b
+INNER JOIN PACKAGE p ON b.package_id = p.package_id
+WHERE b.booking_id = 3;
+
+-- QUERY 3: The query gives all employee information for a specific branch that a manager may need to access to find employee phone numbers or look at gaps in the workforce.
+
+SELECT
+  d.dmpt_name AS "Department",
+  CONCAT(e.emp_fname, ' ', e.emp_lname) AS "Employee",
+  r.role_name AS "Role",
+  CONCAT(e.emp_id, '@', d.dmpt_emailSuffix) AS "Email Address",
+  e.emp_phoneNum AS "Phone"
+FROM EMPLOYEE e
+INNER JOIN ROLE r USING (role_id)
+INNER JOIN DEPARTMENT d USING (dmpt_id)
+WHERE e.branch_id = (
+  SELECT 
+    b.branch_id 
+  FROM BRANCH b 
+  WHERE b.branch_name = 'Sunnyside Cambridge'
+)
+ORDER BY d.dmpt_name, e.emp_lname ASC;
+
+-- QUERY 4: Package payment status, 
+--          this query gives a way for the accounting and finance team of the company to monitor customer payments for a specific booking showing total price for that booking, current amount paid, amount remaining and the history of their payments.
+
+SELECT
+  CONCAT(cust.cust_email, ' | ', cust.cust_phoneNum) AS "Customer Contacts",
+  b.booking_id AS "Booking ID",
+  p.payment_id AS "Payment ID",
+  (
+    SELECT 
+      COUNT(*) 
+    FROM TRAVELLERS t 
+    WHERE t.booking_id = b.booking_id
+  ) AS "Number of Travellers",
+  CONCAT('£', p.payment_totalPrice) AS "Total Price",
+  CONCAT('£', p.payment_amountPaid) AS "Amount Paid",
+  CASE
+    WHEN p.payment_totalPrice - p.payment_amountPaid < 0 THEN 'N/A'
+    ELSE CONCAT('£', p.payment_totalPrice - p.payment_amountPaid)
+  END AS "Remaining",
+  ARRAY_TO_STRING(
+    ARRAY_AGG(
+      CONCAT('Instalment-', i.instalments_number, ': ', '£', i.instalments_amountPaid)
+    ), ', '
+  ) AS "Payment History"
+FROM BOOKING b
+INNER JOIN CUSTOMER cust USING (cust_id)
+INNER JOIN PAYMENT p USING (booking_id)
+INNER JOIN INSTALMENTS i USING (payment_id)
+WHERE cust.cust_email = 'robertmicheals@gmail.com'
+GROUP BY 
+  cust.cust_email, 
+  cust.cust_phoneNum,
+  b.booking_id,
+  p.payment_id;
+
+
+-- QUERY 5: For the final query it shows details about a specific package with key details such as cost, destination and time of leaving. 
+--          This can help sales give accurate information to make sure the customer is well informed.
+
+SELECT
+  p.package_id AS "Package ID",
+  CONCAT(p.package_start, ' - ', p.package_end) AS "Package Duration",
+  CASE
+    WHEN p.package_carRented THEN 'Yes'
+    ELSE 'No'
+  END AS "With Car",
+  CONCAT('£', ROUND(p.package_pricePP * (1 - (p.package_discount / 100)), 2)) AS "Current Price Per Person",
+  CONCAT(h.hotel_name, ' - ', a.address_city, ' - ', a.address_postcode) AS "Hotel",
+  CONCAT(f.flight_locationStart, ' to ', f.flight_locationEnd) AS "Flight",
+  CONCAT(f.flight_date, ' at ', f.flight_boarding) AS "Flight Time"
+FROM PACKAGE p
+INNER JOIN HOTEL h USING (hotel_id)
+INNER JOIN FLIGHT f USING (flight_id)
+INNER JOIN ADDRESS a USING (address_id)
+WHERE p.package_id = 5;
+
+/*--------------------------*/
+/*----------VIEWS-----------*/
+/*--------------------------*/
+
+-- View for Query 1
+CREATE OR REPLACE VIEW best_package AS
+SELECT  b.package_id        AS "Package Number",
+        COUNT(b.package_id) AS "Most Popular Package"
+FROM BOOKING b
+GROUP BY  b.package_id
+ORDER BY "Most Popular Package" DESC
+LIMIT 1;
+
+-- View for Query 2
+CREATE OR REPLACE VIEW booking_details AS
+SELECT  (
+          SELECT  CONCAT(c.cust_email,' | ',c.cust_phoneNum)
+          FROM CUSTOMER c
+          WHERE c.cust_id = b.cust_id
+        )                                             AS "Customer Contacts", 
+        b.package_id                                  AS "Package Number", 
+        CONCAT(p.package_start, ' - ', p.package_end) AS "Package Time Frame", 
+        (
+          SELECT  CONCAT(f.flight_date,' at ',f.flight_boarding,' - ',f.flight_locationStart,' to ',f.flight_locationEnd)
+          FROM FLIGHT f
+          WHERE f.flight_id = p.flight_id 
+        )                                             AS "Flight Information", 
+        (
+          SELECT  h.hotel_name
+          FROM HOTEL h
+          WHERE h.hotel_id = p.hotel_id 
+        )                                             AS "Hotel"
+FROM BOOKING b
+INNER JOIN PACKAGE p ON b.package_id = p.package_id
+WHERE b.booking_id = 3; 
+
+-- View for Query 3
+CREATE OR REPLACE VIEW cbg_employee_info AS
+SELECT  d.dmpt_name                             AS "Department",
+        CONCAT(e.emp_fname,' ',e.emp_lname)     AS "Employee",
+        r.role_name                             AS "Role",
+        CONCAT(e.emp_id,'@',d.dmpt_emailSuffix) AS "Email Address",
+        e.emp_phoneNum                          AS "Phone"
+FROM EMPLOYEE e
+INNER JOIN ROLE r USING (role_id)
+INNER JOIN DEPARTMENT d USING (dmpt_id)
+WHERE e.branch_id = (
+  SELECT  b.branch_id
+  FROM BRANCH b
+  WHERE b.branch_name = 'Sunnyside Cambridge' 
+)
+ORDER BY d.dmpt_name, e.emp_lname ASC;
+
+-- View for Query 4
+CREATE OR REPLACE VIEW package_payment_status AS
+SELECT  CONCAT(cust.cust_email,' | ',cust.cust_phoneNum)                                                                       AS "Customer Contacts",
+        b.booking_id                                                                                                           AS "Booking ID",
+        p.payment_id                                                                                                           AS "Payment ID",
+        (
+          SELECT  COUNT(*)
+          FROM TRAVELLERS t
+          WHERE t.booking_id = b.booking_id 
+        )                                                                                                                      AS "Number of Travellers", 
+        CONCAT('£', p.payment_totalPrice)                                                                                      AS "Total Price",
+        CONCAT('£', p.payment_amountPaid)                                                                                      AS "Amount Paid",
+        CASE 
+          WHEN p.payment_totalPrice - p.payment_amountPaid < 0 THEN 'N/A' 
+          ELSE CONCAT('£', p.payment_totalPrice - p.payment_amountPaid) 
+        END                                                                                                                    AS "Remaining", 
+        ARRAY_TO_STRING( ARRAY_AGG( CONCAT('Instalment-', i.instalments_number, ': ', '£', i.instalments_amountPaid) ), ', ' ) AS "Payment History"
+FROM BOOKING b
+INNER JOIN CUSTOMER cust USING (cust_id)
+INNER JOIN PAYMENT p USING (booking_id)
+INNER JOIN INSTALMENTS i USING (payment_id)
+WHERE cust.cust_email = 'robertmicheals@gmail.com'
+GROUP BY  cust.cust_email,
+          cust.cust_phoneNum,
+          b.booking_id,
+          p.payment_id;
+
+-- View for Query 5
+CREATE REPLACE OR VIEW package_details AS
+SELECT  p.package_id                                                              AS "Package ID",
+        CONCAT(p.package_start,' - ',p.package_end)                               AS "Package Duration",
+        CASE 
+          WHEN p.package_carRented THEN 'Yes'  
+          ELSE 'No' 
+        END                                                                       AS "With Car",
+        CONCAT('£',ROUND(p.package_pricePP * (1 - (p.package_discount / 100)),2)) AS "Current Price Per Person",
+        CONCAT(h.hotel_name,' - ',a.address_city,' - ',a.address_postcode)        AS "Hotel",
+        CONCAT(f.flight_locationStart,' to ',f.flight_locationEnd)                AS "Flight",
+        CONCAT(f.flight_date,' at ',f.flight_boarding)                            AS "Flight Time"
+FROM PACKAGE p
+INNER JOIN HOTEL h USING (hotel_id)
+INNER JOIN FLIGHT f USING (flight_id)
+INNER JOIN ADDRESS a USING (address_id)
+WHERE p.package_id = 5;
+
+
 GRANT SELECT ON best_package TO resdev_managers;
 GRANT SELECT ON best_package TO resdev_employees;
 GRANT SELECT ON best_package TO marketingsales_managers;
@@ -1272,179 +1469,10 @@ GRANT SELECT ON package_details TO marketingsales_employees;
 GRANT SELECT ON package_details TO custservice_managers;
 GRANT SELECT ON package_details TO custservice_employees;
 
--- Users
+/*--------------------------*/
+/*----------BACKUP----------*/
+/*--------------------------*/
 
-CREATE USER lwang01 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password01' IN ROLE admin_managers;
-CREATE DATABASE lwang01 OWNER lwang01;
-CREATE USER wli02 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password02' IN ROLE admin_managers;
-CREATE DATABASE wli02 OWNER wli02;
-CREATE USER fzhang03 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password03' IN ROLE admin_managers;
-CREATE DATABASE fzhang03 OWNER fzhang03;
-CREATE USER wcheung04 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password04' IN ROLE admin_employees;
-CREATE DATABASE wcheung04 OWNER wcheung04;
-CREATE USER xteoh05 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password05' IN ROLE resdev_managers;
-CREATE DATABASE xteoh05 OWNER xteoh05;
-CREATE USER xchan06 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password06' IN ROLE resdev_managers;
-CREATE DATABASE xchan06 OWNER xchan06;
-CREATE USER nyeung07 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password07' IN ROLE resdev_managers;
-CREATE DATABASE nyeung07 OWNER nyeung07;
-CREATE USER xwong8 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password08' IN ROLE resdev_employees;
-CREATE DATABASE xwong08 OWNER xwong08;
-CREATE USER wchiu09 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password09' IN ROLE resdev_employees;
-CREATE DATABASE wchiu09 OWNER wchiu09;
-CREATE USER mng10 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password10' IN ROLE marketingsales_managers;
-CREATE DATABASE mng10 OWNER mng10;
-CREATE USER jchow11 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password11' IN ROLE marketingsales_managers;
-CREATE DATABASE jchow11 OWNER jchow11;
-CREATE USER lchao12 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password12' IN ROLE marketingsales_managers;
-CREATE DATABASE lchao12 OWNER lchao12;
-CREATE USER qtsui13 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password13' IN ROLE marketingsales_managers;
-CREATE DATABASE qtsui13 OWNER qtsui13;
-CREATE USER jchu14 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password14' IN ROLE marketingsales_employees;
-CREATE DATABASE jchu14 OWNER jchu14;
-CREATE USER mwu15 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password15' IN ROLE marketingsales_managers;
-CREATE DATABASE mwu15 OWNER mwu15;
-CREATE USER mho16 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password16' IN ROLE marketingsales_employees;
-CREATE DATABASE mho16 OWNER mho16;
-CREATE USER llam17 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password17' IN ROLE marketingsales_employees;
-CREATE DATABASE llam17 OWNER llam17;
-CREATE USER jlo18 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password18' IN ROLE marketingsales_employees;
-CREATE DATABASE jlo18 OWNER jlo18;
-CREATE USER yzeng19 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password19' IN ROLE hr_managers;
-CREATE DATABASE yzeng19 OWNER yzeng19;
-CREATE USER yze20 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password20' IN ROLE hr_managers;
-CREATE DATABASE yze20 OWNER yze20;
-CREATE USER ysung21 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password21' IN ROLE hr_employees;
-CREATE DATABASE ysung21 OWNER ysung21;
-CREATE USER ydang22 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password22' IN ROLE custservice_managers;
-CREATE DATABASE ydang22 OWNER ydang22;
-CREATE USER tteng23 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password23' IN ROLE custservice_managers;
-CREATE DATABASE tteng23 OWNER tteng23;
-CREATE USER mto24 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password24' IN ROLE custservice_employees;
-CREATE DATABASE mto24 OWNER mto24;
-CREATE USER jhai25 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password25' IN ROLE custservice_employees;
-CREATE DATABASE jhai25 OWNER jhai25;
-CREATE USER jkyo26 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password26' IN ROLE accountfinance_managers;
-CREATE DATABASE jkyo26 OWNER jkyo26;
-CREATE USER xdeung27 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password27' IN ROLE accountfinance_managers;
-CREATE DATABASE xdeung27 OWNER xdeung27;
-CREATE USER gto28 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password28' IN ROLE accountfinance_employees;
-CREATE DATABASE gto28 OWNER gto28;
-CREATE USER ptengco29 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password29' IN ROLE accountfinance_employees;
-CREATE DATABASE ptengco29 OWNER ptengco29;
-CREATE USER aabe30 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password30' IN ROLE admin_managers;
-CREATE DATABASE aabe30 OWNER aabe30;
-CREATE USER habiko31 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password31' IN ROLE admin_managers;
-CREATE DATABASE habiko31 OWNER habiko31;
-CREATE USER aabhuraya32 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password32' IN ROLE admin_managers;
-CREATE DATABASE aabhuraya32 OWNER aabhuraya32;
-CREATE USER hadachi33 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password33' IN ROLE admin_employees;
-CREATE DATABASE hadachi33 OWNER hadachi33;
-CREATE USER aadachihara34 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password34' IN ROLE resdev_managers;
-CREATE DATABASE aadachihara34 OWNER aadachihara34;
-CREATE USER hagawa35 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password35' IN ROLE resdev_managers;
-CREATE DATABASE hagawa35 OWNER hagawa35;
-CREATE USER baguni36 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password36' IN ROLE resdev_managers;
-CREATE DATABASE baguni36 OWNER baguni36;
-CREATE USER hahane37 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password37' IN ROLE resdev_employees;
-CREATE DATABASE hahane37 OWNER hahane37;
-CREATE USER faikawa38 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password38' IN ROLE resdev_employees;
-CREATE DATABASE faikawa38 OWNER faikawa38;
-CREATE USER iaoki39 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password39' IN ROLE marketingsales_managers;
-CREATE DATABASE iaoki39 OWNER iaoki39;
-CREATE USER haiuchi40 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password40' IN ROLE marketingsales_managers;
-CREATE DATABASE haiuchi40 OWNER haiuchi40;
-CREATE USER kamamiya41 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password41' IN ROLE marketingsales_managers;
-CREATE DATABASE kamamiya41 OWNER kamamiya41;
-CREATE USER jbaba42 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password42' IN ROLE marketingsales_managers;
-CREATE DATABASE jbaba42 OWNER jbaba42;
-CREATE USER mbando43 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password43' IN ROLE marketingsales_employees;
-CREATE DATABASE mbando43 OWNER mbando43;
-CREATE USER kbushida44 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password44' IN ROLE marketingsales_managers;
-CREATE DATABASE kbushida44 OWNER kbushida44;
-CREATE USER rchiba45 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password45' IN ROLE marketingsales_employees;
-CREATE DATABASE rchiba45 OWNER rchiba45;
-CREATE USER kchibana46 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password46' IN ROLE marketingsales_employees;
-CREATE DATABASE kchibana46 OWNER kchibana46;
-CREATE USER rchisaka47 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password47' IN ROLE marketingsales_employees;
-CREATE DATABASE rchisaka47 OWNER rchisaka47;
-CREATE USER ichinen48 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password48' IN ROLE hr_managers;
-CREATE DATABASE ichinen48 OWNER ichinen48;
-CREATE USER sdaguchi49 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password49' IN ROLE hr_managers;
-CREATE DATABASE sdaguchi49 OWNER sdaguchi49;
-CREATE USER adaigo50 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password50' IN ROLE hr_employees;
-CREATE DATABASE adaigo50 OWNER adaigo50;
-CREATE USER sdate51 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password51' IN ROLE custservice_managers;
-CREATE DATABASE sdate51 OWNER sdate51;
-CREATE USER ymatsumoto52 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password52' IN ROLE custservice_managers;
-CREATE DATABASE ymatsumoto52 OWNER ymatsumoto52;
-CREATE USER syamaguchi53 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password53' IN ROLE custservice_employees;
-CREATE DATABASE syamaguchi53 OWNER syamaguchi53;
-CREATE USER msasaki54 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password54' IN ROLE custservice_employees;
-CREATE DATABASE msasaki54 OWNER msasaki54;
-CREATE USER myoshida55 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password55' IN ROLE accountfinance_managers;
-CREATE DATABASE myoshida55 OWNER myoshida55;
-CREATE USER kyamada56 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password56' IN ROLE accountfinance_managers;
-CREATE DATABASE kyamada56 OWNER kyamada56;
-CREATE USER kkato57 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password57' IN ROLE accountfinance_employees;
-CREATE DATABASE kkato57 OWNER kkato57;
-CREATE USER iyamamoto58 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password58' IN ROLE accountfinance_employees;
-CREATE DATABASE iyamamoto58 OWNER iyamamoto58;
-CREATE USER hkobayashi59 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password59' IN ROLE admin_managers;
-CREATE DATABASE hkobayashi59 OWNER hkobayashi59;
-CREATE USER hnakamura60 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password60' IN ROLE admin_managers;
-CREATE DATABASE hnakamura60 OWNER hnakamura60;
-CREATE USER hito61 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password61' IN ROLE admin_managers;
-CREATE DATABASE hito61 OWNER hito61;
-CREATE USER ewatanabe62 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password62' IN ROLE admin_employees;
-CREATE DATABASE ewatanabe62 OWNER ewatanabe62;
-CREATE USER dtanaka63 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password63' IN ROLE resdev_managers;
-CREATE DATABASE dtanaka63 OWNER dtanaka63;
-CREATE USER ctakahashi64 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password64' IN ROLE resdev_managers;
-CREATE DATABASE ctakahashi64 OWNER ctakahashi64;
-CREATE USER asuzuki65 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password65' IN ROLE resdev_managers;
-CREATE DATABASE asuzuki65 OWNER asuzuki65;
-CREATE USER asato66 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password66' IN ROLE resdev_employees;
-CREATE DATABASE asato66 OWNER asato66;
-CREATE USER pjung67 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password67' IN ROLE resdev_employees;
-CREATE DATABASE pjung67 OWNER pjung67;
-CREATE USER byun68 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password68' IN ROLE marketingsales_managers;
-CREATE DATABASE byun68 OWNER byun68;
-CREATE USER ccho69 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password69' IN ROLE marketingsales_managers;
-CREATE DATABASE ccho69 OWNER ccho69;
-CREATE USER mchoi70 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password70' IN ROLE marketingsales_managers;
-CREATE DATABASE mchoi70 OWNER mchoi70;
-CREATE USER lkim71 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password71' IN ROLE marketingsales_managers;
-CREATE DATABASE lkim71 OWNER lkim71;
-CREATE USER ssung72 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password72' IN ROLE marketingsales_employees;
-CREATE DATABASE ssung72 OWNER ssung72;
-CREATE USER szhou73 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password73' IN ROLE marketingsales_managers;
-CREATE DATABASE szhou73 OWNER szhou73;
-CREATE USER mwu74 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password74' IN ROLE marketingsales_employees;
-CREATE DATABASE mwu74 OWNER mwu74;
-CREATE USER dzhao75 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password75' IN ROLE marketingsales_employees;
-CREATE DATABASE dzhao75 OWNER dzhao75;
-CREATE USER chuang76 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password76' IN ROLE marketingsales_employees;
-CREATE DATABASE chuang76 OWNER chuang76;
-CREATE USER jyang77 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password77' IN ROLE hr_managers;
-CREATE DATABASE jyang77 OWNER jyang77;
-CREATE USER ochen78 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password78' IN ROLE hr_managers;
-CREATE DATABASE ochen78 OWNER ochen78;
-CREATE USER rliu79 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password79' IN ROLE hr_employees;
-CREATE DATABASE rliu79 OWNER rliu79;
-CREATE USER szhang80 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password80' IN ROLE custservice_managers;
-CREATE DATABASE szhang80 OWNER szhang80;
-CREATE USER cwang81 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password81' IN ROLE custservice_managers;
-CREATE DATABASE cwang81 OWNER cwang81;
-CREATE USER rbob82 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password82' IN ROLE custservice_employees;
-CREATE DATABASE rbob82 OWNER rbob82;
-CREATE USER bross83 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password83' IN ROLE custservice_employees;
-CREATE DATABASE bross83 OWNER bross83;
-CREATE USER dlong84 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password84' IN ROLE accountfinance_managers;
-CREATE DATABASE dlong84 OWNER dlong84;
-CREATE USER mlee85 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD 'password85' IN ROLE accountfinance_managers;
-CREATE DATABASE mlee85 OWNER mlee85;
-CREATE USER jyip86 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password86' IN ROLE accountfinance_employees;
-CREATE DATABASE jyip86 OWNER jyip86;
-CREATE USER jyany87 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS PASSWORD 'password87' IN ROLE accountfinance_employees;
-CREATE DATABASE jyany87 OWNER jyany87;
+\q
+mkdir -p db_backup/databases
+pg_dump sunnyside > db_backup/databases/sunnyside_bk.sql
