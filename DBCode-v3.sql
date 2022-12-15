@@ -1,3 +1,22 @@
+/*
+
+CONTENTS:
+-- Commands for command line
+-- Database Initialisation
+-- Database Creation
+-- Indexes
+-- Functions
+-- Procedures
+-- Triggers
+-- Dummy data
+-- Roles
+-- Queries
+-- Views
+-- Backup 
+
+*/
+
+
 createuser -P -s -e dbadmin;
 -- Password: password00
 createdb dbadmin -O "dbadmin";
@@ -7,6 +26,11 @@ psql -h localhost -p 5432 -U dbadmin;
 CREATE USER dbadmin WITH SUPERUSER PASSWORD "password00";
 CREATE DATABASE dbadmin OWNER dbadmin;
 */
+
+/*--------------------------*/
+/*-------INITIALISATION-----*/
+/*--------------------------*/
+
 
 DROP DATABASE SUNNYSIDE;
 CREATE DATABASE SUNNYSIDE;
