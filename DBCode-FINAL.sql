@@ -96,7 +96,7 @@ CREATE TABLE HOTEL (
   address_id INT NOT NULL,
   hotel_name VARCHAR(50) NOT NULL,
   hotel_rating CHAR(1) NOT NULL,
-  hotel_phoneNum VARCHAR(20) NOT NULL UNIQUE,
+  hotel_phoneNum VARCHAR(11) NOT NULL UNIQUE,
   hotel_totalRooms INT NOT NULL,
     FOREIGN KEY (address_id)
       REFERENCES ADDRESS(address_id)
@@ -144,7 +144,7 @@ CREATE TABLE HOTEL_AMENITIES (
 CREATE TABLE BRANCH (
   branch_id SERIAL PRIMARY KEY,
   address_id INT NOT NULL,
-  branch_name VARCHAR(50),
+  branch_name VARCHAR(50) NOT NULL,
     FOREIGN KEY (address_id)
       REFERENCES ADDRESS(address_id)
       ON DELETE CASCADE
@@ -164,7 +164,10 @@ CREATE TABLE CAR_PICKUP (
   car_id SERIAL PRIMARY KEY,
   address_id INT NOT NULL,
   car_collection_date DATE NOT NULL,
-  car_return_date DATE NOT NULL
+  car_return_date DATE NOT NULL,
+    FOREIGN KEY (address_id)
+      REFERENCES ADDRESS(address_id)
+      ON DELETE CASCADE
 );
 
 CREATE TABLE PACKAGE (
@@ -273,7 +276,10 @@ CREATE TABLE INSTALMENTS (
   instalments_id SERIAL PRIMARY KEY,
   payment_id INT NOT NULL,
   instalments_number INT NOT NULL,
-  instalments_amountPaid DECIMAL(8, 2)
+  instalments_amountPaid DECIMAL(8, 2),
+    FOREIGN KEY (payment_id)
+      REFERENCES PAYMENT(payment_id)
+      ON DELETE CASCADE
 );
 
 /*--------------------------*/
@@ -529,11 +535,11 @@ INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNu
 INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (9, 'Timmy', 'Dock', '1985-07-20', '7272 072348' , 'timmydock@gmail.com');
 INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (10, 'Loudred', 'Smock', '1984-06-25', '7235 072348' , 'lourdredsmock@gmail.com');
 
-INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Royal Hotel', 11, 3, '01983 852186', 300);
-INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('New Place Hotel', 12, 3, '01329 833543', 200);
-INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Burj Al Arab', 13, 6, '+971 4 301 7777', 500);
-INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Atlantis Palms', 14, 5, '+971 4 426 2000', 500);
-INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Bless Hotel', 15, 4, '+34 915 75 28 00', 400);
+INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Royal Hotel', 11, 3, '1983 852186', 300);
+INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('New Place Hotel', 12, 3, '1329 833543', 200);
+INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Burj Al Arab', 13, 6, '7143 017777', 500);
+INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Atlantis Palms', 14, 5, '7144 262000', 500);
+INSERT INTO HOTEL (hotel_name, address_id, hotel_rating, hotel_phoneNum, hotel_totalRooms) VALUES ('Bless Hotel', 15, 4, '4915 752800', 400);
 
 INSERT INTO ROOM (hotel_id, room_type, room_numOfRoomType) VALUES (1, 'Single Room', 100);
 INSERT INTO ROOM (hotel_id, room_type, room_numOfRoomType) VALUES (1, 'Double Room', 100);
