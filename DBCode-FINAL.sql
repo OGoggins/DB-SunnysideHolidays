@@ -14,6 +14,9 @@ CONTENTS:
 -- Backup 
 */
 
+/*--------------------------*/
+/*-------INITIALISATION-----*/
+/*--------------------------*/
 /* 
 ### DOCUMENTATION ###
   - Below are command line commands that create the superuser and an appropriate database owned by the superuser.
@@ -23,14 +26,19 @@ CONTENTS:
     -O means owner
     Underneath that is how a typical user would log in, -h allows the server to be ran locally, -p is the port which its ran on and -U is the user.
     After these are ran, you can log into PSQL as dbadmin and run the rest of the code, after which any employee can now log in as their own user.
+
+    dropuser dbadmin;
+    createuser -P -s -e dbadmin;
+    -- Password: password00, or any password Sunnyside choose as there is a password prompt.
+    dropdb dbadmin;
+    createdb dbadmin -O "dbadmin";
+    psql -h localhost -p 5432 -U dbadmin;
+
+    # BACKUP #
+    - create the database sql backup file after the database has originally been created 
+    mkdir -p db_backup/databases;
+    pg_dump sunnyside > db_backup/databases/sunnyside_bk.sql;
 */
-
-
-createuser -P -s -e dbadmin;
--- Password: password00, or any password Sunnyside choose as there is a password prompt.
-createdb dbadmin -O "dbadmin";
-psql -h localhost -p 5432 -U dbadmin;
-
 /* 
 ### DOCUMENTATION ###
   This is what is looks like in PSQL form.
@@ -38,12 +46,9 @@ psql -h localhost -p 5432 -U dbadmin;
   CREATE DATABASE dbadmin OWNER dbadmin;
 */
 
-/*--------------------------*/
-/*-------INITIALISATION-----*/
-/*--------------------------*/
 DROP DATABASE SUNNYSIDE;
 CREATE DATABASE SUNNYSIDE;
-GRANT ALL PRIVILEGES ON DATABASE sunnyside TO dbadmin; 
+-- GRANT ALL PRIVILEGES ON DATABASE sunnyside TO dbadmin; 
 \c sunnyside;
 
 /*--------------------------*/
@@ -415,7 +420,6 @@ EXECUTE PROCEDURE update_amountPaid_after_instalments_insert();
 /*--------------------------*/
 /*---------INSERTS---------*/
 /*--------------------------*/
-
 INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('11 Stoneleigh Place', 'Suite 127', 'UK', 'Oxford', 'OX10 6PT');
 INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('12 Buckfast Street', null, 'UK', 'Oxford', 'OX45 3AF');
 INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Abbots Place', null, 'UK', 'London', 'NW5 9HX');
@@ -1302,120 +1306,6 @@ CREATE USER jyany87 WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS
 CREATE DATABASE jyany87 OWNER jyany87;
 
 /*--------------------------*/
-/*---------QUERIES----------*/
-/*--------------------------*/
--- QUERY 1
-SELECT
-  b.package_id AS "Package Number",
-  COUNT(b.package_id) AS "Most Popular Package"
-FROM BOOKING b
-GROUP BY b.package_id
-ORDER BY "Most Popular Package" DESC
-LIMIT 1;
-
--- QUERY 2
-SELECT
-  (
-    SELECT 
-      CONCAT(c.cust_email, ' | ', c.cust_phoneNum) 
-    FROM CUSTOMER c 
-    WHERE c.cust_id = b.cust_id
-  ) AS "Customer Contacts",
-  b.package_id AS "Package Number",
-  CONCAT(b.booking_start, ' - ', b.booking_end) AS "Booking Duration",
-  (
-    SELECT 
-      CONCAT(f.flight_location_from, ' to ', f.flight_location_to, ' Arrival:(', f.flight_date_start, ' - ', f.flight_boarding_start, ') Return:(', f.flight_date_end, ' - ', f.flight_boarding_end, ')')
-    FROM FLIGHT f
-    WHERE f.flight_id = p.flight_id
-  ) AS "Flight Details",
-  (
-    SELECT
-      h.hotel_name
-    FROM HOTEL h
-    WHERE h.hotel_id = p.hotel_id
-  ) AS "Hotel"
-FROM BOOKING b
-INNER JOIN PACKAGE p USING (package_id)
-WHERE b.booking_id = 3;
-
--- QUERY 3
-SELECT
-  d.dmpt_name AS "Department",
-  CONCAT(e.emp_fname, ' ', e.emp_lname) AS "Employee",
-  r.role_name AS "Role",
-  CONCAT(e.emp_id, '@', d.dmpt_emailSuffix) AS "Email Address",
-  e.emp_phoneNum AS "Phone"
-FROM EMPLOYEE e
-INNER JOIN ROLE r USING (role_id)
-INNER JOIN DEPARTMENT d USING (dmpt_id)
-WHERE e.branch_id = (
-  SELECT 
-    b.branch_id 
-  FROM BRANCH b 
-  WHERE b.branch_name = 'Sunnyside Cambridge'
-)
-ORDER BY d.dmpt_name, e.emp_lname ASC;
-
--- QUERY 4
-SELECT
-  CONCAT(cust.cust_email, ' | ', cust.cust_phoneNum) AS "Customer Contacts",
-  b.booking_id AS "Booking ID",
-  p.payment_id AS "Payment ID",
-  (
-    SELECT 
-      COUNT(*) 
-    FROM TRAVELLERS t 
-    WHERE t.booking_id = b.booking_id
-  ) AS "Number of Travellers",
-  CONCAT('£', p.payment_totalPrice) AS "Total Price",
-  CONCAT('£', p.payment_amountPaid) AS "Amount Paid",
-  CASE
-    WHEN p.payment_totalPrice - p.payment_amountPaid < 0 THEN 'N/A'
-    ELSE CONCAT('£', p.payment_totalPrice - p.payment_amountPaid)
-  END AS "Remaining",
-  ARRAY_TO_STRING(
-    ARRAY_AGG(
-      CONCAT('Instalment-', i.instalments_number, ': ', '£', i.instalments_amountPaid)
-    ), ', '
-  ) AS "Payment History"
-FROM BOOKING b
-INNER JOIN CUSTOMER cust USING (cust_id)
-INNER JOIN PAYMENT p USING (booking_id)
-INNER JOIN INSTALMENTS i USING (payment_id)
-WHERE cust.cust_email = 'robertmicheals@gmail.com'
-GROUP BY 
-  cust.cust_email, 
-  cust.cust_phoneNum,
-  b.booking_id,
-  p.payment_id;
-
--- QUERY 5
-SELECT
-  p.package_id AS "Package ID",
-  CASE
-    WHEN p.package_car_rented THEN 
-    (
-      SELECT
-        CONCAT('Collection:(', car.car_collection_date, ') Return:(', car.car_return_date, ')', ' At:(', a.address_city,', ', a.address_postcode,')')
-      FROM CAR_PICKUP car
-      INNER JOIN ADDRESS a USING (address_id)
-      WHERE car.car_id = p.car_id
-    )
-    ELSE 'null'
-  END AS "With Car",
-  CONCAT('£', ROUND(p.package_pricePP * (1 - (p.package_discount / 100)), 2)) AS "Current Price Per Person",
-  CONCAT(h.hotel_name, ' - ', addr.address_city, ' - ', addr.address_postcode) AS "Hotel",
-  CONCAT(f.flight_location_from, ' to ', f.flight_location_to) AS "Flight",
-  CONCAT(f.flight_date_start, ' at ', f.flight_boarding_start) AS "Flight Arrival Time",
-  CONCAT(f.flight_date_end, ' at ', f.flight_boarding_end) AS "Flight Departure Time"
-FROM PACKAGE p
-INNER JOIN HOTEL h USING (hotel_id)
-INNER JOIN ADDRESS addr USING (address_id)
-INNER JOIN FLIGHT f USING (flight_id)
-WHERE p.package_id = 3;
-
-/*--------------------------*/
 /*----------VIEWS-----------*/
 /*--------------------------*/
 -- View for Query 1
@@ -1547,8 +1437,115 @@ GRANT SELECT ON package_details TO custservice_managers;
 GRANT SELECT ON package_details TO custservice_employees;
 
 /*--------------------------*/
-/*----------BACKUP----------*/
+/*---------QUERIES----------*/
 /*--------------------------*/
-\q
-mkdir -p db_backup/databases
-pg_dump sunnyside > db_backup/databases/sunnyside_bk.sql
+-- QUERY 1
+SELECT
+  b.package_id AS "Package Number",
+  COUNT(b.package_id) AS "Most Popular Package"
+FROM BOOKING b
+GROUP BY b.package_id
+ORDER BY "Most Popular Package" DESC
+LIMIT 1;
+
+-- QUERY 2
+SELECT
+  (
+    SELECT 
+      CONCAT(c.cust_email, ' | ', c.cust_phoneNum) 
+    FROM CUSTOMER c 
+    WHERE c.cust_id = b.cust_id
+  ) AS "Customer Contacts",
+  b.package_id AS "Package Number",
+  CONCAT(b.booking_start, ' - ', b.booking_end) AS "Booking Duration",
+  (
+    SELECT 
+      CONCAT(f.flight_location_from, ' to ', f.flight_location_to, ' Arrival:(', f.flight_date_start, ' - ', f.flight_boarding_start, ') Return:(', f.flight_date_end, ' - ', f.flight_boarding_end, ')')
+    FROM FLIGHT f
+    WHERE f.flight_id = p.flight_id
+  ) AS "Flight Details",
+  (
+    SELECT
+      h.hotel_name
+    FROM HOTEL h
+    WHERE h.hotel_id = p.hotel_id
+  ) AS "Hotel"
+FROM BOOKING b
+INNER JOIN PACKAGE p USING (package_id)
+WHERE b.booking_id = 3;
+
+-- QUERY 3
+SELECT
+  d.dmpt_name AS "Department",
+  CONCAT(e.emp_fname, ' ', e.emp_lname) AS "Employee",
+  r.role_name AS "Role",
+  CONCAT(e.emp_id, '@', d.dmpt_emailSuffix) AS "Email Address",
+  e.emp_phoneNum AS "Phone"
+FROM EMPLOYEE e
+INNER JOIN ROLE r USING (role_id)
+INNER JOIN DEPARTMENT d USING (dmpt_id)
+WHERE e.branch_id = (
+  SELECT 
+    b.branch_id 
+  FROM BRANCH b 
+  WHERE b.branch_name = 'Sunnyside Cambridge'
+)
+ORDER BY d.dmpt_name, e.emp_lname ASC;
+
+-- QUERY 4
+SELECT
+  CONCAT(cust.cust_email, ' | ', cust.cust_phoneNum) AS "Customer Contacts",
+  b.booking_id AS "Booking ID",
+  p.payment_id AS "Payment ID",
+  (
+    SELECT 
+      COUNT(*) 
+    FROM TRAVELLERS t 
+    WHERE t.booking_id = b.booking_id
+  ) AS "Number of Travellers",
+  CONCAT('£', p.payment_totalPrice) AS "Total Price",
+  CONCAT('£', p.payment_amountPaid) AS "Amount Paid",
+  CASE
+    WHEN p.payment_totalPrice - p.payment_amountPaid < 0 THEN 'N/A'
+    ELSE CONCAT('£', p.payment_totalPrice - p.payment_amountPaid)
+  END AS "Remaining",
+  ARRAY_TO_STRING(
+    ARRAY_AGG(
+      CONCAT('Instalment-', i.instalments_number, ': ', '£', i.instalments_amountPaid)
+    ), ', '
+  ) AS "Payment History"
+FROM BOOKING b
+INNER JOIN CUSTOMER cust USING (cust_id)
+INNER JOIN PAYMENT p USING (booking_id)
+INNER JOIN INSTALMENTS i USING (payment_id)
+WHERE cust.cust_email = 'robertmicheals@gmail.com'
+GROUP BY 
+  cust.cust_email, 
+  cust.cust_phoneNum,
+  b.booking_id,
+  p.payment_id;
+
+-- QUERY 5
+SELECT
+  p.package_id AS "Package ID",
+  CASE
+    WHEN p.package_car_rented THEN 
+    (
+      SELECT
+        CONCAT('Collection:(', car.car_collection_date, ') Return:(', car.car_return_date, ')', ' At:(', a.address_city,', ', a.address_postcode,')')
+      FROM CAR_PICKUP car
+      INNER JOIN ADDRESS a USING (address_id)
+      WHERE car.car_id = p.car_id
+    )
+    ELSE 'null'
+  END AS "With Car",
+  CONCAT('£', ROUND(p.package_pricePP * (1 - (p.package_discount / 100)), 2)) AS "Current Price Per Person",
+  CONCAT(h.hotel_name, ' - ', addr.address_city, ' - ', addr.address_postcode) AS "Hotel",
+  CONCAT(f.flight_location_from, ' to ', f.flight_location_to) AS "Flight",
+  CONCAT(f.flight_date_start, ' at ', f.flight_boarding_start) AS "Flight Arrival Time",
+  CONCAT(f.flight_date_end, ' at ', f.flight_boarding_end) AS "Flight Departure Time"
+FROM PACKAGE p
+INNER JOIN HOTEL h USING (hotel_id)
+INNER JOIN ADDRESS addr USING (address_id)
+INNER JOIN FLIGHT f USING (flight_id)
+WHERE p.package_id = 3;
