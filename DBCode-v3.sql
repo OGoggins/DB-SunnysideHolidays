@@ -1,5 +1,4 @@
 /*
-
 CONTENTS:
 -- Commands for command line
 -- Database Initialisation
@@ -13,16 +12,15 @@ CONTENTS:
 -- Queries
 -- Views
 -- Backup 
-
 */
-
 
 createuser -P -s -e dbadmin;
 -- Password: password00
 createdb dbadmin -O "dbadmin";
 psql -h localhost -p 5432 -U dbadmin;
 
-/* Or
+/* 
+OR
 CREATE USER dbadmin WITH SUPERUSER PASSWORD "password00";
 CREATE DATABASE dbadmin OWNER dbadmin;
 */
@@ -30,8 +28,6 @@ CREATE DATABASE dbadmin OWNER dbadmin;
 /*--------------------------*/
 /*-------INITIALISATION-----*/
 /*--------------------------*/
-
-
 DROP DATABASE SUNNYSIDE;
 CREATE DATABASE SUNNYSIDE;
 GRANT ALL PRIVILEGES ON DATABASE sunnyside TO dbadmin; 
@@ -40,7 +36,6 @@ GRANT ALL PRIVILEGES ON DATABASE sunnyside TO dbadmin;
 /*--------------------------*/
 /*---------DATABASE---------*/
 /*--------------------------*/
-
 DROP TABLE IF EXISTS INSTALMENTS CASCADE;
 DROP TABLE IF EXISTS PAYMENT CASCADE;
 DROP TABLE IF EXISTS TRAVELLERS CASCADE;
@@ -277,6 +272,10 @@ CREATE INDEX branch_name_idx ON BRANCH(branch_name);
 /*--------------------------*/
 /*---------FUNCTIONS---------*/
 /*--------------------------*/
+/* 
+### DOCUMENTATION ###
+  - After a bookings insert the payment row that that specific booking ID is set with null values.
+*/
 CREATE OR REPLACE FUNCTION set_payment_after_booking_insert()
   RETURNS TRIGGER
   LANGUAGE PLPGSQL
@@ -288,6 +287,11 @@ BEGIN
 END;
 $BODY$;
 
+/* 
+### DOCUMENTATION ###
+  - After each insert on the travellers table (a traveller added to a specific booking) the payment row for that specfic booking
+    is updated, updating the total price for that specific booking according to the number of travellers with that specific booking ID.
+*/
 CREATE OR REPLACE FUNCTION update_payment_after_travellers_insert()
   RETURNS TRIGGER
   LANGUAGE PLPGSQL
@@ -311,6 +315,12 @@ BEGIN
 END;
 $BODY$;
 
+/* 
+### DOCUMENTATION ###
+  - After a payment instalment has been made the payment row for that specfic payment ID is updated,
+    updating the total amount paid by the customer. Also if the total amount paid by the customer is
+    greater than the total price the function will change the payment status from false to true.
+*/
 CREATE OR REPLACE FUNCTION update_amountPaid_after_instalments_insert()
   RETURNS TRIGGER
   LANGUAGE PLPGSQL
@@ -340,11 +350,13 @@ $BODY$;
 /*--------------------------*/
 /*--------PROCEDURES--------*/
 /*--------------------------*/
-
--- Procedure that resets a user's password. It takes 3 parameters, the role name, the employee ID, the new password. 
--- If the new password is above 8 characters in length and contains a number then it will ALTER ROLE and UPDATE the employee table where all the passwords are stored
--- Else, error.
-
+/* 
+### DOCUMENTATION ###
+  - Procedure that resets a user's password. It takes 3 parameters, the role name, the employee ID, the new password. 
+    If the new password is above 8 characters in length and contains a number then it will ALTER ROLE and UPDATE the 
+    employee table where all the passwords are stored
+    Else, error.
+*/
 CREATE OR REPLACE PROCEDURE set_user_password(p_user VARCHAR(32), p_emp_id INT, p_input VARCHAR(100))
 LANGUAGE PLPGSQL
 AS 
@@ -385,113 +397,113 @@ EXECUTE PROCEDURE update_amountPaid_after_instalments_insert();
 /*---------INSERTS---------*/
 /*--------------------------*/
 
-/* 1 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('11 Stoneleigh Place', 'Suite 127', 'UK', 'Oxford', 'OX10 6PT');
-/* 2 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('12 Buckfast Street', null, 'UK', 'Oxford', 'OX45 3AF');
-/* 3 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Abbots Place', null, 'UK', 'London', 'NW5 9HX');
-/* 4 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Abbotswell Road', 'Suite 63', 'UK', 'London', 'NW12 4SE');
-/* 5 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('15 Herald Street', null, 'UK', 'Portsmouth', 'PO60 6HW');
-/* 6 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('16 Hazel Grove', 'Suite 97', 'UK', 'Portsmouth', 'PO15 7JE');
-/* 7 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('17 Corn Street', 'Suite 965', 'UK', 'Oxford', 'OX20 3RA');
-/* 8 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Benhill Road', null, 'UK', 'Oxford', 'OX3 1NA');
-/* 9 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Castle Road', 'Suite 12', 'UK', 'Oxford', 'OX33 1SP');
-/* 10 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Lapton Road', null, 'UK', 'Oxford', 'OX10 1EA');
-/* 11 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('12 Belgrave Road', null, 'FR', 'Paris', '72115');
-/* 12 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Shirrell Heath', null, 'FR', 'Paris', '78965');
-/* 13 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Umm Suqeim 3', null, 'AE', 'Dubai', '21936');
-/* 14 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Crescent Rd - The Palm Jumeirah', null, 'AE', 'Dubai', '29406');
-/* 15 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('15 C. de Velázquez', null, 'ES', 'Madrid', '28001');
-/* 16 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('63 Springfield Road', null, 'UK', 'Cambridge', 'CB60 5DF');
-/* 17 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('46 School Lane', null, 'UK', 'Sunderland', 'SR32 8FV');
-/* 18 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('62 The Grove', null, 'UK', 'Liverpool', 'LP68 3DY');
-/* 19 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('1 Stanhope Cottages', null, 'UK', 'Porstmouth', 'PO10 6XQ');
-/* 20 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('2 Heywood Moorings', null, 'UK', 'Porstmouth', 'PO24 4LA');
-/* 21 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('3 Ruskin Circus', null, 'UK', 'Porstmouth', 'PO4 2SG');
-/* 22 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('4 Oval Road South', null, 'UK', 'Porstmouth', 'PO16 9AW');
-/* 23 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('5 Academy Las', null, 'UK', 'Porstmouth', 'PO42 1ZW');
-/* 24 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('6 Madeira Barton', null, 'UK', 'Porstmouth', 'PO3 8LT');
-/* 25 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Francis Laurels', null, 'UK', 'Porstmouth', 'PO38 0XX');
-/* 26 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Sidney Meadows', null, 'UK', 'Portsmouth', 'PO2 4JP');
-/* 27 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Elmtree Close', null, 'UK', 'Portsmouth', 'PO19 8PN');
-/* 28 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Aspen Ridgeway', null, 'UK', 'Portsmouth', 'PO8 9NN');
-/* 29 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Curtis Gait', null, 'UK', 'Portsmouth', 'PO14 5EW');
-/* 30 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Curtis By-Pass', null, 'UK', 'Portsmouth', 'PO3 0EP');
-/* 31 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Long Passage', null, 'UK', 'Portsmouth', 'PO1 4AR');
-/* 32 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Jade Row', null, 'UK', 'Portsmouth', 'PO2 5BS');
-/* 33 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Prospect Route', null, 'UK', 'Portsmouth', 'PO3 6CT');
-/* 34 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Canal Avenue', null, 'UK', 'Portsmouth', 'PO4 7DU');
-/* 35 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 New Castle Way', null, 'UK', 'Portsmouth', 'PO5 8EV');
-/* 36 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Liberty Street', null, 'UK', 'Portsmouth', 'PO6 9FW');
-/* 37 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Central Street', null, 'UK', 'Portsmouth', 'PO7 1GX');
-/* 38 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Arctic Street', null, 'UK', 'Portsmouth', 'PO8 2HY');
-/* 39 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Ember Row', null, 'UK', 'Portsmouth', 'PO9 3IZ');
-/* 40 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Tower Boulevard', null, 'UK', 'Portsmouth', 'PO10 4JA');
-/* 41 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 General Street', null, 'UK', 'Portsmouth', 'PO11 5KB');
-/* 42 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Medieval Row', null, 'UK', 'Portsmouth', 'PO12 6LC');
-/* 43 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Crown Avenue', null, 'UK', 'Portsmouth', 'PO13 7MD');
-/* 44 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Azure Street', null, 'UK', 'Portsmouth', 'PO14 8NE');
-/* 45 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Green Avenue', null, 'UK', 'Portsmouth', 'PO15 9OF');
-/* 46 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Congress Way', null, 'UK', 'Portsmouth', 'PO16 1PG');
-/* 47 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Elmwood Row', null, 'UK', 'Portsmouth', 'PO17 2QH');
-/* 48 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('7 Laburnum Covert', null, 'UK', 'Oxford', 'OX16 6SN');
-/* 49 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('8 Northanger Drive', null, 'UK', 'Oxford', 'OX67 8RW');
-/* 50 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('9 Raleigh Avenue', null, 'UK', 'Oxford', 'OX2N 6AS');
-/* 51 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('10 Middlefield Crescent', null, 'UK', 'Oxford', 'OX2 2EG');
-/* 52 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('11 Stoneyfields', null, 'UK', 'Oxford', 'OX4 1BA');
-/* 53 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('12 Brooklands Downs', null, 'UK', 'Oxford', 'OX5 3NQ');
-/* 54 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('20 Union North', null, 'UK', 'Oxford', 'OX30 9QG');
-/* 55 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Harebell Heights', null, 'UK', 'Oxford', 'OX15 5FY');
-/* 56 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Morley Close', null, 'UK', 'Oxford', 'OX31 2XD');
-/* 57 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Aylesbury Promenade', null, 'UK', 'Oxford', 'OX16 6EQ');
-/* 58 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Hanbury Square', null, 'UK', 'Oxford', 'OX7 8SQ');
-/* 59 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Greenwood Lawn', null, 'UK', 'Oxford', 'OX6 5JY');
-/* 60 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Starlight Avenue', null, 'UK', 'Oxford', 'OX1 4AR');
-/* 61 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Acorn Avenue', null, 'UK', 'Oxford', 'OX2 5BS');
-/* 62 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Flint Passage', null, 'UK', 'Oxford', 'OX3 6CT');
-/* 63 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Palm Avenue', null, 'UK', 'Oxford', 'OX4 7DU');
-/* 64 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Lily Lane', null, 'UK', 'Oxford', 'OX5 8EV');
-/* 65 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Museum Avenue', null, 'UK', 'Oxford', 'OX6 9FW');
-/* 66 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Polygon Lane', null, 'UK', 'Oxford', 'OX7 1GX');
-/* 67 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Mandarin Street', null, 'UK', 'Oxford', 'OX8 2HY');
-/* 68 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Luna Route', null, 'UK', 'Oxford', 'OX9 3IZ');
-/* 69 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Duchess Way', null, 'UK', 'Oxford', 'OX0 4JA');
-/* 70 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Rose Lane', null, 'UK', 'Oxford', 'OX1 5KB');
-/* 71 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Feathers Boulevard', null, 'UK', 'Oxford', 'OX2 6LC');
-/* 72 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Gold Way', null, 'UK', 'Oxford', 'OX3 7MD');
-/* 73 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Storm Avenue', null, 'UK', 'Oxford', 'OX4 8NE');
-/* 74 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Noble Boulevard', null, 'UK', 'Oxford', 'OX5 9OF');
-/* 75 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Bay Lane', null, 'UK', 'Oxford', 'OX6 1PG');
-/* 76 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Congress Boulevard', null, 'UK', 'Oxford', 'OX7 2QH');
-/* 77 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Leven Fairway', null, 'UK', 'London', 'NW14 8QH');
-/* 78 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Madeira Circus', null, 'UK', 'London', 'NW7 6PH');
-/* 79 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('15 Kensington Circle', null, 'UK', 'London', 'NW2 4EN');
-/* 80 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('16 Hanson Dene', null, 'UK', 'London', 'NW6 0BX');
-/* 81 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('17 Blake Acre', null, 'UK', 'London', 'NW1 3EX');
-/* 82 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Atlas Corner', null, 'UK', 'London', 'NW2 8PH');
-/* 83 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('21 Woods Mill', null, 'UK', 'London', 'NW7 7LN');
-/* 84 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Union Oaks', null, 'UK', 'London', 'NW7 6QT');
-/* 85 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Bloomfield Mead', null, 'UK', 'London', 'NW20 6AG');
-/* 86 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Beresford Court', null, 'UK', 'London', 'NW3 2DF');
-/* 87 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Watling Buildings', null, 'UK', 'London', 'NW3 9TX');
-/* 88 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Douglas Path', null, 'UK', 'London', 'NW5 5BU');
-/* 89 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Snowflake Boulevard', null, 'UK', 'London', 'NW7 2QH');
-/* 90 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Arctic Avenue', null, 'UK', 'London', 'NW6 1PG');
-/* 91 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Hazelnut Street', null, 'UK', 'London', 'NW5 9OF');
-/* 92 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Middle Lane', null, 'UK', 'London', 'NW4 8NE');
-/* 93 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Gem Street', null, 'UK', 'London', 'NW3 7MD');
-/* 94 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Rosemary Avenue', null, 'UK', 'London', 'NW2 6LC');
-/* 95 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Broom Row', null, 'UK', 'London', 'NW1 5KB');
-/* 96 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Cavern Passage', null, 'UK', 'London', 'NW0 4JA');
-/* 97 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Orchid Street', null, 'UK', 'London', 'NW9 3IZ');
-/* 98 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Low Avenue', null, 'UK', 'London', 'NW8 2HY');
-/* 99 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Clarity Lane', null, 'UK', 'London', 'NW7 1GX');
-/* 100 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Bard Boulevard', null, 'UK', 'London', 'NW6 9FW');
-/* 101 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Congress Street', null, 'UK', 'London', 'NW5 8EV');
-/* 102 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Plaza Route', null, 'UK', 'London', 'NW4 7DU');
-/* 103 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Valley Avenue', null, 'UK', 'London', 'NW3 6CT');
-/* 104 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Orchid Avenue', null, 'UK', 'London', 'NW2 5BS');
-/* 105 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Crystal Street', null, 'UK', 'London', 'NW1 4AR');
-/* 106 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Meg Heath', null, 'FR', 'Paris', '75003');
-/* 107 */INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Low don 3', null, 'AE', 'Dubai', '20436');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('11 Stoneleigh Place', 'Suite 127', 'UK', 'Oxford', 'OX10 6PT');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('12 Buckfast Street', null, 'UK', 'Oxford', 'OX45 3AF');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Abbots Place', null, 'UK', 'London', 'NW5 9HX');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Abbotswell Road', 'Suite 63', 'UK', 'London', 'NW12 4SE');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('15 Herald Street', null, 'UK', 'Portsmouth', 'PO60 6HW');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('16 Hazel Grove', 'Suite 97', 'UK', 'Portsmouth', 'PO15 7JE');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('17 Corn Street', 'Suite 965', 'UK', 'Oxford', 'OX20 3RA');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Benhill Road', null, 'UK', 'Oxford', 'OX3 1NA');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Castle Road', 'Suite 12', 'UK', 'Oxford', 'OX33 1SP');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Lapton Road', null, 'UK', 'Oxford', 'OX10 1EA');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('12 Belgrave Road', null, 'FR', 'Paris', '72115');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Shirrell Heath', null, 'FR', 'Paris', '78965');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Umm Suqeim 3', null, 'AE', 'Dubai', '21936');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Crescent Rd - The Palm Jumeirah', null, 'AE', 'Dubai', '29406');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('15 C. de Velázquez', null, 'ES', 'Madrid', '28001');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('63 Springfield Road', null, 'UK', 'Cambridge', 'CB60 5DF');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('46 School Lane', null, 'UK', 'Sunderland', 'SR32 8FV');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('62 The Grove', null, 'UK', 'Liverpool', 'LP68 3DY');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('1 Stanhope Cottages', null, 'UK', 'Porstmouth', 'PO10 6XQ');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('2 Heywood Moorings', null, 'UK', 'Porstmouth', 'PO24 4LA');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('3 Ruskin Circus', null, 'UK', 'Porstmouth', 'PO4 2SG');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('4 Oval Road South', null, 'UK', 'Porstmouth', 'PO16 9AW');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('5 Academy Las', null, 'UK', 'Porstmouth', 'PO42 1ZW');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('6 Madeira Barton', null, 'UK', 'Porstmouth', 'PO3 8LT');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Francis Laurels', null, 'UK', 'Porstmouth', 'PO38 0XX');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Sidney Meadows', null, 'UK', 'Portsmouth', 'PO2 4JP');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Elmtree Close', null, 'UK', 'Portsmouth', 'PO19 8PN');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Aspen Ridgeway', null, 'UK', 'Portsmouth', 'PO8 9NN');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Curtis Gait', null, 'UK', 'Portsmouth', 'PO14 5EW');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Curtis By-Pass', null, 'UK', 'Portsmouth', 'PO3 0EP');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Long Passage', null, 'UK', 'Portsmouth', 'PO1 4AR');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Jade Row', null, 'UK', 'Portsmouth', 'PO2 5BS');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Prospect Route', null, 'UK', 'Portsmouth', 'PO3 6CT');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Canal Avenue', null, 'UK', 'Portsmouth', 'PO4 7DU');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 New Castle Way', null, 'UK', 'Portsmouth', 'PO5 8EV');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Liberty Street', null, 'UK', 'Portsmouth', 'PO6 9FW');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Central Street', null, 'UK', 'Portsmouth', 'PO7 1GX');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Arctic Street', null, 'UK', 'Portsmouth', 'PO8 2HY');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Ember Row', null, 'UK', 'Portsmouth', 'PO9 3IZ');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Tower Boulevard', null, 'UK', 'Portsmouth', 'PO10 4JA');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 General Street', null, 'UK', 'Portsmouth', 'PO11 5KB');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Medieval Row', null, 'UK', 'Portsmouth', 'PO12 6LC');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Crown Avenue', null, 'UK', 'Portsmouth', 'PO13 7MD');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Azure Street', null, 'UK', 'Portsmouth', 'PO14 8NE');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Green Avenue', null, 'UK', 'Portsmouth', 'PO15 9OF');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Congress Way', null, 'UK', 'Portsmouth', 'PO16 1PG');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Elmwood Row', null, 'UK', 'Portsmouth', 'PO17 2QH');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('7 Laburnum Covert', null, 'UK', 'Oxford', 'OX16 6SN');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('8 Northanger Drive', null, 'UK', 'Oxford', 'OX67 8RW');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('9 Raleigh Avenue', null, 'UK', 'Oxford', 'OX2N 6AS');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('10 Middlefield Crescent', null, 'UK', 'Oxford', 'OX2 2EG');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('11 Stoneyfields', null, 'UK', 'Oxford', 'OX4 1BA');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('12 Brooklands Downs', null, 'UK', 'Oxford', 'OX5 3NQ');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('20 Union North', null, 'UK', 'Oxford', 'OX30 9QG');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Harebell Heights', null, 'UK', 'Oxford', 'OX15 5FY');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Morley Close', null, 'UK', 'Oxford', 'OX31 2XD');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Aylesbury Promenade', null, 'UK', 'Oxford', 'OX16 6EQ');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Hanbury Square', null, 'UK', 'Oxford', 'OX7 8SQ');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Greenwood Lawn', null, 'UK', 'Oxford', 'OX6 5JY');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Starlight Avenue', null, 'UK', 'Oxford', 'OX1 4AR');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Acorn Avenue', null, 'UK', 'Oxford', 'OX2 5BS');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Flint Passage', null, 'UK', 'Oxford', 'OX3 6CT');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Palm Avenue', null, 'UK', 'Oxford', 'OX4 7DU');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Lily Lane', null, 'UK', 'Oxford', 'OX5 8EV');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Museum Avenue', null, 'UK', 'Oxford', 'OX6 9FW');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Polygon Lane', null, 'UK', 'Oxford', 'OX7 1GX');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Mandarin Street', null, 'UK', 'Oxford', 'OX8 2HY');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Luna Route', null, 'UK', 'Oxford', 'OX9 3IZ');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Duchess Way', null, 'UK', 'Oxford', 'OX0 4JA');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Rose Lane', null, 'UK', 'Oxford', 'OX1 5KB');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Feathers Boulevard', null, 'UK', 'Oxford', 'OX2 6LC');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Gold Way', null, 'UK', 'Oxford', 'OX3 7MD');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Storm Avenue', null, 'UK', 'Oxford', 'OX4 8NE');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Noble Boulevard', null, 'UK', 'Oxford', 'OX5 9OF');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Bay Lane', null, 'UK', 'Oxford', 'OX6 1PG');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Congress Boulevard', null, 'UK', 'Oxford', 'OX7 2QH');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Leven Fairway', null, 'UK', 'London', 'NW14 8QH');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Madeira Circus', null, 'UK', 'London', 'NW7 6PH');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('15 Kensington Circle', null, 'UK', 'London', 'NW2 4EN');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('16 Hanson Dene', null, 'UK', 'London', 'NW6 0BX');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('17 Blake Acre', null, 'UK', 'London', 'NW1 3EX');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Atlas Corner', null, 'UK', 'London', 'NW2 8PH');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('21 Woods Mill', null, 'UK', 'London', 'NW7 7LN');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Union Oaks', null, 'UK', 'London', 'NW7 6QT');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Bloomfield Mead', null, 'UK', 'London', 'NW20 6AG');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Beresford Court', null, 'UK', 'London', 'NW3 2DF');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Watling Buildings', null, 'UK', 'London', 'NW3 9TX');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('18 Douglas Path', null, 'UK', 'London', 'NW5 5BU');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Snowflake Boulevard', null, 'UK', 'London', 'NW7 2QH');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Arctic Avenue', null, 'UK', 'London', 'NW6 1PG');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Hazelnut Street', null, 'UK', 'London', 'NW5 9OF');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Middle Lane', null, 'UK', 'London', 'NW4 8NE');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Gem Street', null, 'UK', 'London', 'NW3 7MD');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Rosemary Avenue', null, 'UK', 'London', 'NW2 6LC');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Broom Row', null, 'UK', 'London', 'NW1 5KB');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Cavern Passage', null, 'UK', 'London', 'NW0 4JA');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Orchid Street', null, 'UK', 'London', 'NW9 3IZ');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Low Avenue', null, 'UK', 'London', 'NW8 2HY');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Clarity Lane', null, 'UK', 'London', 'NW7 1GX');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Bard Boulevard', null, 'UK', 'London', 'NW6 9FW');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Congress Street', null, 'UK', 'London', 'NW5 8EV');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Plaza Route', null, 'UK', 'London', 'NW4 7DU');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Valley Avenue', null, 'UK', 'London', 'NW3 6CT');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Orchid Avenue', null, 'UK', 'London', 'NW2 5BS');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('19 Crystal Street', null, 'UK', 'London', 'NW1 4AR');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('14 Meg Heath', null, 'FR', 'Paris', '75003');
+INSERT INTO ADDRESS (address_line1, address_line2, address_country, address_city, address_postcode) VALUES ('13 Low don 3', null, 'AE', 'Dubai', '20436');
 
 INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (1, 'James', 'Smith', '1984-01-10', '7457 471053', 'jamessmith@gmail.com');
 INSERT INTO CUSTOMER (address_id, cust_fname, cust_lname, cust_dob, cust_phoneNum, cust_email) VALUES (2, 'Micheal', 'Lee', '1983-02-11', '7700 036373' , 'micheallee@gmail.com');
@@ -765,7 +777,6 @@ INSERT INTO INSTALMENTS (payment_id, instalments_number, instalments_amountPaid)
 /*--------------------------*/
 /*-----------ROLES----------*/
 /*--------------------------*/
-
 REVOKE ALL PRIVILEGES ON DATABASE sunnyside FROM manager;
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM admin_managers;
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM admin_employees;
@@ -779,7 +790,6 @@ REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM custservice_managers;
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM custservice_employees;
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM accountfinance_managers;
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM accountfinance_employees;
-
 
 DROP ROLE IF EXISTS manager;
 DROP OWNED BY admin_managers CASCADE;
@@ -894,6 +904,7 @@ DROP DATABASE IF EXISTS dlong84;
 DROP DATABASE IF EXISTS mlee85;
 DROP DATABASE IF EXISTS jyip86;
 DROP DATABASE IF EXISTS jyany87;
+
 DROP ROLE IF EXISTS lwang01;
 DROP ROLE IF EXISTS wli02;
 DROP ROLE IF EXISTS fzhang03;
@@ -983,9 +994,7 @@ DROP ROLE IF EXISTS jyip86;
 DROP ROLE IF EXISTS jyany87;
 
 -- General Roles/Templates
-
 CREATE USER manager WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT PASSWORD NULL;
-
 GRANT CREATE ON DATABASE sunnyside TO manager;
 
 -- Groups
@@ -1002,9 +1011,7 @@ CREATE GROUP custservice_employees WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHE
 CREATE GROUP accountfinance_managers WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT IN ROLE manager;
 CREATE GROUP accountfinance_employees WITH NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS;
 
-
 -- Privileges
-
 GRANT SELECT, UPDATE, INSERT, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public TO admin_managers;
 GRANT SELECT, UPDATE, INSERT, DELETE ON ALL TABLES IN SCHEMA public TO admin_employees;
 
@@ -1099,9 +1106,7 @@ GRANT SELECT, UPDATE, INSERT, DELETE ON ROLE TO accountfinance_employees;
 GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH TO accountfinance_employees;
 GRANT SELECT, UPDATE, INSERT, DELETE ON BRANCH_PACKAGE TO accountfinance_employees;
 
-
 -- Users
-
 CREATE USER lwang01 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password01' IN ROLE admin_managers;
 CREATE DATABASE lwang01 OWNER lwang01;
 CREATE USER wli02 WITH NOSUPERUSER NOCREATEDB CREATEROLE INHERIT ENCRYPTED PASSWORD 'password02' IN ROLE admin_managers;
@@ -1280,10 +1285,7 @@ CREATE DATABASE jyany87 OWNER jyany87;
 /*--------------------------*/
 /*---------QUERIES----------*/
 /*--------------------------*/
-
--- QUERY 1: This shows the best performing package for the entire lifetime of the company. 
---          This is helpful to sales since they can know what package is the most likely to sell when pitched to a customer.
-
+-- QUERY 1
 SELECT
   b.package_id AS "Package Number",
   COUNT(b.package_id) AS "Most Popular Package"
@@ -1292,9 +1294,7 @@ GROUP BY b.package_id
 ORDER BY "Most Popular Package" DESC
 LIMIT 1;
 
--- QUERY 2: The query shows key details about a specific booking. For instance package time frame along with flight and hotel information. 
---          This can be used for when a customer has placed an order on a holiday and needs to be reminded of key details.
-
+-- QUERY 2
 SELECT
   (
     SELECT 
@@ -1320,8 +1320,7 @@ FROM BOOKING b
 INNER JOIN PACKAGE p USING (package_id)
 WHERE b.booking_id = 3;
 
--- QUERY 3: The query gives all employee information for a specific branch that a manager may need to access to find employee phone numbers or look at gaps in the workforce.
-
+-- QUERY 3
 SELECT
   d.dmpt_name AS "Department",
   CONCAT(e.emp_fname, ' ', e.emp_lname) AS "Employee",
@@ -1339,9 +1338,7 @@ WHERE e.branch_id = (
 )
 ORDER BY d.dmpt_name, e.emp_lname ASC;
 
--- QUERY 4: Package payment status, 
---          this query gives a way for the accounting and finance team of the company to monitor customer payments for a specific booking showing total price for that booking, current amount paid, amount remaining and the history of their payments.
-
+-- QUERY 4
 SELECT
   CONCAT(cust.cust_email, ' | ', cust.cust_phoneNum) AS "Customer Contacts",
   b.booking_id AS "Booking ID",
@@ -1374,10 +1371,7 @@ GROUP BY
   b.booking_id,
   p.payment_id;
 
-
--- QUERY 5: For the final query it shows details about a specific package with key details such as cost, destination and time of leaving. 
---          This can help sales give accurate information to make sure the customer is well informed.
-
+-- QUERY 5
 SELECT
   p.package_id AS "Package ID",
   CASE
@@ -1405,7 +1399,6 @@ WHERE p.package_id = 3;
 /*--------------------------*/
 /*----------VIEWS-----------*/
 /*--------------------------*/
-
 -- View for Query 1
 CREATE OR REPLACE VIEW best_package AS
 SELECT  b.package_id        AS "Package Number",
@@ -1417,26 +1410,30 @@ LIMIT 1;
 
 -- View for Query 2
 CREATE OR REPLACE VIEW booking_details AS
-SELECT  (
-          SELECT  CONCAT(c.cust_email,' | ',c.cust_phoneNum)
-          FROM CUSTOMER c
-          WHERE c.cust_id = b.cust_id
-        )                                             AS "Customer Contacts", 
-        b.package_id                                  AS "Package Number", 
-        CONCAT(p.package_start, ' - ', p.package_end) AS "Package Time Frame", 
-        (
-          SELECT  CONCAT(f.flight_date,' at ',f.flight_boarding,' - ',f.flight_locationStart,' to ',f.flight_locationEnd)
-          FROM FLIGHT f
-          WHERE f.flight_id = p.flight_id 
-        )                                             AS "Flight Information", 
-        (
-          SELECT  h.hotel_name
-          FROM HOTEL h
-          WHERE h.hotel_id = p.hotel_id 
-        )                                             AS "Hotel"
+SELECT
+  (
+    SELECT 
+      CONCAT(c.cust_email, ' | ', c.cust_phoneNum) 
+    FROM CUSTOMER c 
+    WHERE c.cust_id = b.cust_id
+  ) AS "Customer Contacts",
+  b.package_id AS "Package Number",
+  CONCAT(b.booking_start, ' - ', b.booking_end) AS "Booking Duration",
+  (
+    SELECT 
+      CONCAT(f.flight_location_from, ' to ', f.flight_location_to, ' Arrival:(', f.flight_date_start, ' - ', f.flight_boarding_start, ') Return:(', f.flight_date_end, ' - ', f.flight_boarding_end, ')')
+    FROM FLIGHT f
+    WHERE f.flight_id = p.flight_id
+  ) AS "Flight Details",
+  (
+    SELECT
+      h.hotel_name
+    FROM HOTEL h
+    WHERE h.hotel_id = p.hotel_id
+  ) AS "Hotel"
 FROM BOOKING b
-INNER JOIN PACKAGE p ON b.package_id = p.package_id
-WHERE b.booking_id = 3; 
+INNER JOIN PACKAGE p USING (package_id)
+WHERE b.booking_id = 3;
 
 -- View for Query 3
 CREATE OR REPLACE VIEW cbg_employee_info AS
@@ -1484,21 +1481,29 @@ GROUP BY  cust.cust_email,
 
 -- View for Query 5
 CREATE OR  REPLACE VIEW package_details AS
-SELECT  p.package_id                                                              AS "Package ID",
-        CONCAT(p.package_start,' - ',p.package_end)                               AS "Package Duration",
-        CASE 
-          WHEN p.package_carRented THEN 'Yes'  
-          ELSE 'No' 
-        END                                                                       AS "With Car",
-        CONCAT('£',ROUND(p.package_pricePP * (1 - (p.package_discount / 100)),2)) AS "Current Price Per Person",
-        CONCAT(h.hotel_name,' - ',a.address_city,' - ',a.address_postcode)        AS "Hotel",
-        CONCAT(f.flight_locationStart,' to ',f.flight_locationEnd)                AS "Flight",
-        CONCAT(f.flight_date,' at ',f.flight_boarding)                            AS "Flight Time"
+SELECT
+  p.package_id AS "Package ID",
+  CASE
+    WHEN p.package_car_rented THEN 
+    (
+      SELECT
+        CONCAT('Collection:(', car.car_collection_date, ') Return:(', car.car_return_date, ')', ' At:(', a.address_city,', ', a.address_postcode,')')
+      FROM CAR_PICKUP car
+      INNER JOIN ADDRESS a USING (address_id)
+      WHERE car.car_id = p.car_id
+    )
+    ELSE 'null'
+  END AS "With Car",
+  CONCAT('£', ROUND(p.package_pricePP * (1 - (p.package_discount / 100)), 2)) AS "Current Price Per Person",
+  CONCAT(h.hotel_name, ' - ', addr.address_city, ' - ', addr.address_postcode) AS "Hotel",
+  CONCAT(f.flight_location_from, ' to ', f.flight_location_to) AS "Flight",
+  CONCAT(f.flight_date_start, ' at ', f.flight_boarding_start) AS "Flight Arrival Time",
+  CONCAT(f.flight_date_end, ' at ', f.flight_boarding_end) AS "Flight Departure Time"
 FROM PACKAGE p
 INNER JOIN HOTEL h USING (hotel_id)
+INNER JOIN ADDRESS addr USING (address_id)
 INNER JOIN FLIGHT f USING (flight_id)
-INNER JOIN ADDRESS a USING (address_id)
-WHERE p.package_id = 5;
+WHERE p.package_id = 3;
 
 
 GRANT SELECT ON best_package TO resdev_managers;
@@ -1525,7 +1530,6 @@ GRANT SELECT ON package_details TO custservice_employees;
 /*--------------------------*/
 /*----------BACKUP----------*/
 /*--------------------------*/
-
 \q
 mkdir -p db_backup/databases
 pg_dump sunnyside > db_backup/databases/sunnyside_bk.sql
